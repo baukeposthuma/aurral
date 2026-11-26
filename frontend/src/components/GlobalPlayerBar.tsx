@@ -2,6 +2,7 @@ import {
   useCallback,
   useEffect,
   useRef,
+  type RefObject,
   useState,
   type ChangeEvent,
   type PointerEvent,
@@ -44,7 +45,11 @@ import { useAuth } from "../contexts/AuthContext.tsx";
 import { usePlayerFavorite } from "../hooks/usePlayerFavorite.ts";
 import Tooltip from "./Tooltip";
 import TooltipButton from "./TooltipButton";
-import { LibraryItemMenu, type LibraryMenuItem } from "./LibraryItemMenu";
+import {
+  LibraryItemMenu,
+  type LibraryItemMenuHandle,
+  type LibraryMenuItem,
+} from "./LibraryItemMenu";
 import { UpNextQueue, type PlayerRailState } from "./PlayerQueue";
 import PlayerLyrics from "./PlayerLyrics";
 import PlayerFriends, { FriendsDialog } from "./PlayerFriends";
@@ -146,9 +151,10 @@ type GlobalPlayerBarProps = {
   minimized: boolean;
   onMinimizedChange: (minimized: boolean) => void;
   rail: PlayerRailState;
+  menuRef: RefObject<LibraryItemMenuHandle | null>;
 };
 
-function GlobalPlayerBar({ minimized, onMinimizedChange, rail }: GlobalPlayerBarProps) {
+function GlobalPlayerBar({ minimized, onMinimizedChange, rail, menuRef }: GlobalPlayerBarProps) {
   const [failedArtwork, setFailedArtwork] = useState<string | null>(null);
   const {
     currentTrack,
@@ -818,6 +824,11 @@ function GlobalPlayerBar({ minimized, onMinimizedChange, rail }: GlobalPlayerBar
       <div className="global-player__inner">
         <div
           className="global-player__track"
+          onContextMenu={(event) => {
+            if (!menuRef.current) return;
+            event.preventDefault();
+            menuRef.current.openAt(event.clientX, event.clientY);
+          }}
           {...playlistDragProps(
             hasPermission("accessPlaylists") &&
               playlistPayload.artistName &&
@@ -953,6 +964,7 @@ function GlobalPlayerBar({ minimized, onMinimizedChange, rail }: GlobalPlayerBar
         <div className="global-player__side">
           <PlayerDevicesButton className="btn btn-ghost btn-icon btn-xs" />
           <LibraryItemMenu
+            ref={menuRef}
             label={currentTrack.title || "Track"}
             contextMenu={false}
             tooltipPlacement="top"

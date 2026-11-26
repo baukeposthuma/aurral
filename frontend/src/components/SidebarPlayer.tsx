@@ -1,4 +1,4 @@
-import { useState, type SyntheticEvent } from "react";
+import { useState, type RefObject, type SyntheticEvent } from "react";
 import { useAudioQueue } from "../contexts/audioQueueContext";
 import ArtworkImage from "./ArtworkImage";
 import PlayerDevicesButton from "./PlayerDevicesButton";
@@ -6,14 +6,16 @@ import { PlayerMiniProgress } from "./PlayerProgress";
 import { ChevronRight, Music, Pause, Play } from "./icons";
 import { playlistDragProps } from "../utils/playlistDrag.ts";
 import { useAuth } from "../contexts/AuthContext";
+import type { LibraryItemMenuHandle } from "./LibraryItemMenu";
 
 type SidebarPlayerProps = {
   iconsOnly: boolean;
   onRestore: () => void;
   onTooltip?: (event: SyntheticEvent<HTMLElement>) => void;
+  menuRef: RefObject<LibraryItemMenuHandle | null>;
 };
 
-function SidebarPlayer({ iconsOnly, onRestore, onTooltip }: SidebarPlayerProps) {
+function SidebarPlayer({ iconsOnly, onRestore, onTooltip, menuRef }: SidebarPlayerProps) {
   const { currentTrack, isPlaying, isStarting, isLoading, togglePlayPause } = useAudioQueue();
   const [failedArtwork, setFailedArtwork] = useState<string | null>(null);
   const title = currentTrack?.title || "Nothing playing";
@@ -27,6 +29,11 @@ function SidebarPlayer({ iconsOnly, onRestore, onTooltip }: SidebarPlayerProps) 
         type="button"
         className={`sidebar-link sidebar-link--${iconsOnly ? "icons" : "full"} sidebar-player__open`}
         onClick={onRestore}
+        onContextMenu={(event) => {
+          if (!currentTrack || !menuRef.current) return;
+          event.preventDefault();
+          menuRef.current.openAt(event.clientX, event.clientY);
+        }}
         onMouseEnter={onTooltip}
         onFocus={onTooltip}
         aria-label={currentTrack ? `Show player: ${title}` : "Show player"}

@@ -1,4 +1,4 @@
-import { useState, type DragEvent, type SyntheticEvent } from "react";
+import { lazy, Suspense, useState, type DragEvent, type SyntheticEvent } from "react";
 import { useLocation, useNavigate } from "react-router";
 import { useMutation, useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
 import { parseResponse } from "hono/client";
@@ -11,7 +11,7 @@ import { ListMusic, RotateCcw, Upload } from "./icons";
 import { usePlaylistArtwork } from "../hooks/usePlaylistArtwork.ts";
 import { flowPath, playlistPath } from "../navigation/playlistPaths.ts";
 import { PlaylistArtworkThumb } from "./PlaylistArtworkThumb.tsx";
-import type { PlaylistStatus } from "../utils/playlistStats.ts";
+import type { Flow, PlaylistStatus, StaticPlaylist } from "../utils/playlistStats.ts";
 import { applyCustomOrder } from "../utils/playlistOrder.ts";
 import { playlistOrderQueryOptions } from "../queryOptions.ts";
 import { usersClient } from "../utils/api/clients/users.ts";
@@ -38,7 +38,15 @@ type SidebarPlaylistsProps = {
   onTooltip?: (event: SyntheticEvent<HTMLElement>) => void;
 };
 
-type Entry = { id: string; name: string; kind: string; path: string; droppable: boolean };
+type Entry = {
+  id: string;
+  name: string;
+  kind: string;
+  path: string;
+  droppable: boolean;
+  playlist?: StaticPlaylist;
+  flow?: Flow;
+};
 
 function usePlaylistOrder() {
   const { user } = useAuth();
@@ -66,6 +74,14 @@ function usePlaylistOrder() {
   return { order: dropped ?? data?.ids ?? [], isLoading, saveOrder };
 }
 
+// The menus load on the first right-click, keeping them out of the first page load.
+const SidebarStaticPlaylistMenu = lazy(() =>
+  import("./SidebarPlaylistMenu.tsx").then((m) => ({ default: m.SidebarStaticPlaylistMenu })),
+);
+const SidebarFlowMenu = lazy(() =>
+  import("./SidebarPlaylistMenu.tsx").then((m) => ({ default: m.SidebarFlowMenu })),
+);
+
 type DropZone = "into" | "before" | "after";
 
 const dropZoneClass: Record<DropZone, string> = {
@@ -81,6 +97,7 @@ function SidebarPlaylistRow({
   dragActive,
   onDropTracks,
   onDropNewPlaylist,
+  onOpenMenu,
 }: {
   entry: Entry;
   iconsOnly: boolean;
@@ -88,6 +105,7 @@ function SidebarPlaylistRow({
   dragActive: PlaylistDrag | null;
   onDropTracks: (playlistId: string, drag: PlaylistDrag) => void;
   onDropNewPlaylist: (where: "before" | "after", drag: PlaylistDrag) => void;
+  onOpenMenu: (entry: Entry, at: { x: number; y: number }) => void;
 }) {
   const { pathname } = useLocation();
   const { artworkUrlFor } = usePlaylistArtwork();
@@ -142,6 +160,11 @@ function SidebarPlaylistRow({
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
+      onContextMenu={(event) => {
+        if (!entry.playlist && !entry.flow) return;
+        event.preventDefault();
+        onOpenMenu(entry, { x: event.clientX, y: event.clientY });
+      }}
       onMouseEnter={onTooltip}
       onFocus={onTooltip}
       {...listeners}
@@ -240,6 +263,7 @@ function SidebarPlaylists({ status, iconsOnly, onTooltip }: SidebarPlaylistsProp
   const navigate = useNavigate();
   const { user } = useAuth();
   const dragActive = useActivePlaylistDrag();
+  const [menu, setMenu] = useState<{ id: string; at: { x: number; y: number } } | null>(null);
   const dropTracks = useDropTracks();
   const dropNewPlaylist = useDropNewPlaylist(status?.staticPlaylists ?? [], saveOrder);
   if (!status || isLoading) return null;
@@ -251,19 +275,24 @@ function SidebarPlaylists({ status, iconsOnly, onTooltip }: SidebarPlaylistsProp
         kind: "Playlist",
         path: playlistPath(playlist.id),
         droppable: canAddTracksToPlaylist(playlist, user?.id),
+        playlist,
       })),
-      ...status.flows.map(({ id, name }) => ({
-        id,
-        name,
+      ...status.flows.map((flow) => ({
+        id: flow.id,
+        name: flow.name,
         kind: "Flow",
-        path: flowPath(id),
+        path: flowPath(flow.id),
         droppable: false,
+        flow,
       })),
     ],
     order,
   );
 
   if (entries.length === 0) return null;
+  const menuEntry: Entry | undefined = menu
+    ? entries.find((entry) => entry.id === menu.id)
+    : undefined;
 
   return (
     <nav className="sidebar-playlists" aria-label="Your playlists">
@@ -316,6 +345,7 @@ function SidebarPlaylists({ status, iconsOnly, onTooltip }: SidebarPlaylistsProp
               iconsOnly={iconsOnly}
               onTooltip={onTooltip}
               dragActive={dragActive}
+              onOpenMenu={(menuEntry, at) => setMenu({ id: menuEntry.id, at })}
               onDropTracks={(playlistId, drag) => void dropTracks(playlistId, drag)}
               onDropNewPlaylist={(where, drag) =>
                 void dropNewPlaylist(drag, (playlistId) => {
@@ -328,6 +358,13 @@ function SidebarPlaylists({ status, iconsOnly, onTooltip }: SidebarPlaylistsProp
           ))}
         </div>
       </SortableList>
+      <Suspense fallback={null}>
+        {menuEntry?.playlist && menu ? (
+          <SidebarStaticPlaylistMenu key={menu.id} playlist={menuEntry.playlist} at={menu.at} />
+        ) : menuEntry?.flow && menu ? (
+          <SidebarFlowMenu key={menu.id} flow={menuEntry.flow} at={menu.at} />
+        ) : null}
+      </Suspense>
     </nav>
   );
 }

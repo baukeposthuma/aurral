@@ -41,6 +41,7 @@ import { isLibrarySectionPath, useDiscoverRecent } from "../contexts/DiscoverRec
 import { isRecord } from "../../../lib/isRecord.ts";
 import { serverMenuItems } from "./serverMenuItems";
 import { HOSTED } from "../utils/server.ts";
+import type { LibraryItemMenuHandle } from "./LibraryItemMenu";
 
 const SIDEBAR_THRESHOLD = 100;
 const SIDEBAR_MIN = 56;
@@ -95,6 +96,7 @@ function Layout({ children, headerActions }: LayoutProps) {
     }
   });
   const [isResizing, setIsResizing] = useState(false);
+  const playerMenuRef = useRef<LibraryItemMenuHandle>(null);
   const [playerMinimized, setPlayerMinimized] = useState(() => {
     try {
       return localStorage.getItem(PLAYER_MINIMIZED_KEY) === "true";
@@ -494,6 +496,7 @@ function Layout({ children, headerActions }: LayoutProps) {
         width={sidebarWidth}
         onToggle={toggleSidebarPin}
         onRestorePlayer={playerMinimized ? () => changePlayerMinimized(false) : null}
+        playerMenuRef={playerMenuRef}
       />
 
       <div
@@ -625,6 +628,7 @@ function Layout({ children, headerActions }: LayoutProps) {
           minimized={playerMinimized}
           onMinimizedChange={changePlayerMinimized}
           rail={rail}
+          menuRef={playerMenuRef}
         />
 
         {mobileMenuPresence !== "closed" && (

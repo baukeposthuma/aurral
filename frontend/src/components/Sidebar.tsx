@@ -1,6 +1,13 @@
 import { useLocation } from "react-router";
 import RouteLink from "./RouteLink";
-import { useState, useEffect, useCallback, useMemo, type SyntheticEvent } from "react";
+import {
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  type RefObject,
+  type SyntheticEvent,
+} from "react";
 import {
   Activity,
   AudioWaveform,
@@ -19,6 +26,7 @@ import TooltipButton from "./TooltipButton";
 import SidebarPlayer from "./SidebarPlayer";
 import SidebarPlaylists from "./SidebarPlaylists";
 import { useSectionNav } from "../navigation/useSectionNav.ts";
+import type { LibraryItemMenuHandle } from "./LibraryItemMenu";
 import SidebarStageBackdrop, {
   getSidebarStageBackdropEnabled,
   resolveSidebarStageBackdropVariant,
@@ -30,6 +38,7 @@ type SidebarProps = {
   width?: number;
   onToggle: () => void;
   onRestorePlayer: (() => void) | null;
+  playerMenuRef: RefObject<LibraryItemMenuHandle | null>;
 };
 
 type SidebarNavItem = {
@@ -40,7 +49,7 @@ type SidebarNavItem = {
   permission?: string;
 };
 
-function Sidebar({ mode, width = 208, onToggle, onRestorePlayer }: SidebarProps) {
+function Sidebar({ mode, width = 208, onToggle, onRestorePlayer, playerMenuRef }: SidebarProps) {
   const location = useLocation();
   const { user, bootstrap } = useAuth();
   const logo = useSiteLogo();
@@ -226,6 +235,7 @@ function Sidebar({ mode, width = 208, onToggle, onRestorePlayer }: SidebarProps)
               <SidebarPlayer
                 iconsOnly={isIcons}
                 onRestore={onRestorePlayer}
+                menuRef={playerMenuRef}
                 onTooltip={isIcons ? positionSidebarTooltip : undefined}
               />
             </div>
