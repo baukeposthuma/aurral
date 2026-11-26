@@ -10,11 +10,14 @@ import { browsePlaylistPath } from "../navigation/playlistPaths.ts";
 import { resolveAuthenticatedApiAssetUrl } from "../utils/api/core.ts";
 import { browsePlaylistMeta } from "./DiscoverPlaylistSection";
 import { usePlaylistCategories, usePlaylistClaims } from "./usePlaylistShelf";
+import { browsePlaylistDrag } from "../utils/playlistDrag.ts";
+import { useAuth } from "../contexts/AuthContext";
 
 export default function DiscoverPlaylistCategoryPage() {
   const categoryId = useParams().categoryId ?? "";
   const { categories, madeForYou, shelf, community } = usePlaylistCategories();
   const claimOf = usePlaylistClaims();
+  const { user } = useAuth();
   const category = categories.find((entry) => entry.id === categoryId);
   const source =
     categoryId === "made-for-you" ? madeForYou : categoryId === "community" ? community : shelf;
@@ -32,6 +35,7 @@ export default function DiscoverPlaylistCategoryPage() {
             return (
               <PlaylistCard
                 key={`${playlist.provider}:${playlist.id}`}
+                drag={browsePlaylistDrag(user?.id, playlist.provider, playlist.id, playlist.name)}
                 to={browsePlaylistPath(playlist.provider, playlist.id)}
                 state={{
                   seed: {

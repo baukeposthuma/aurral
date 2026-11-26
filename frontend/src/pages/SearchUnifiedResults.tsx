@@ -21,6 +21,7 @@ import {
   type buildSearchSections,
 } from "../utils/searchNavigation";
 import type { UnifiedFilter } from "./searchPageUtils";
+import { savedPlaylistDrag } from "../utils/playlistDrag.ts";
 
 type Sections = ReturnType<typeof buildSearchSections<SearchItem>>;
 type ArtistFeedback = Pick<
@@ -99,6 +100,7 @@ function PlaylistCards({ playlists }: { playlists: SearchItem[] }) {
         name={playlist.name || ""}
         artworkUrl={playlist.coverUrl || artworkUrlFor(String(playlist.id))}
         meta={getPlaylistResultDetail(playlist) || (playlist.sourceFlowId ? "Flow" : null)}
+        drag={savedPlaylistDrag(String(playlist.id), playlist.name || "Playlist")}
       />
     );
   });

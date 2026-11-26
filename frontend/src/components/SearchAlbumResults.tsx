@@ -13,6 +13,9 @@ import { getSearchAlbumState, type SearchAlbumState } from "../pages/searchPageU
 import { OptionalLink } from "./RouteLink";
 import Tooltip from "./Tooltip";
 import { artworkHoverTint } from "../utils/imageColors.ts";
+import { playlistDragProps } from "../utils/playlistDrag.ts";
+import { catalogAlbumDrag } from "../pages/album/releaseTracks.tsx";
+import { useAuth } from "../contexts/AuthContext";
 
 export type SearchAlbum = {
   id: string;
@@ -175,11 +178,16 @@ export function SearchAlbumCard({
   onAlbumAction,
 }: AlbumActionProps & { album: SearchAlbum }) {
   const state = useSearchAlbumState(album, isPending);
+  const canUsePlaylists = useAuth().hasPermission("accessPlaylists");
   const openAlbum = albumLink(album);
   const meta = getAlbumCardMeta(album);
 
   return (
-    <article className="artist-release-card search-album-card" {...artworkHoverTint}>
+    <article
+      className="artist-release-card search-album-card"
+      {...artworkHoverTint}
+      {...playlistDragProps(canUsePlaylists ? catalogAlbumDrag(album) : null)}
+    >
       <div className="search-album-results__cover-wrap">
         <OptionalLink
           link={openAlbum}
@@ -224,6 +232,7 @@ function SearchAlbumListItem({
   onAlbumAction,
 }: AlbumActionProps & { album: SearchAlbum }) {
   const state = useSearchAlbumState(album, isPending);
+  const canUsePlaylists = useAuth().hasPermission("accessPlaylists");
   const openAlbum = albumLink(album);
   const openArtist = artistLink(album);
   const releaseMeta = [
@@ -234,7 +243,10 @@ function SearchAlbumListItem({
     .join(" · ");
 
   return (
-    <article className="artist-release-list-item search-album-results__item">
+    <article
+      className="artist-release-list-item search-album-results__item"
+      {...playlistDragProps(canUsePlaylists ? catalogAlbumDrag(album) : null)}
+    >
       <OptionalLink
         link={openAlbum}
         className="search-album-results__cover-link"

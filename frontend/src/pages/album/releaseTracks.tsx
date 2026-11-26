@@ -6,6 +6,7 @@ import TooltipButton from "../../components/TooltipButton";
 import type { TrackListRow } from "../../components/TrackList";
 import { useAudioQueue } from "../../contexts/audioQueueContext";
 import { useToast } from "../../contexts/ToastContext";
+import { useAuth } from "../../contexts/AuthContext";
 import { useActiveDownloads } from "../../hooks/useActiveDownloads";
 import { useAddTrackToLibrary } from "../../hooks/useAddTrackToLibrary";
 import {
@@ -13,7 +14,11 @@ import {
   type PlaybackSource,
 } from "../../hooks/useAlbumTrackListToolbar";
 import { useQueueTrackActions } from "../../hooks/useQueueTrackActions";
-import type { ReleaseGroupTrack } from "../../utils/api/endpoints/artists.ts";
+import {
+  getReleaseGroupTracks,
+  type ReleaseGroupTrack,
+} from "../../utils/api/endpoints/artists.ts";
+import { resolveCatalogIds, type PlaylistDrag } from "../../utils/playlistDrag.ts";
 import { normalizePreviewTrack } from "../../utils/audioQueue";
 import { type ReleaseGroup } from "../ArtistDetails/utils";
 import { formatDuration } from "../library/libraryShared.tsx";
@@ -26,6 +31,7 @@ import {
   reserveUniquePlaylistName,
 } from "../../utils/staticPlaylists.ts";
 import { albumTrackArtist, formatArtistCredit } from "../../../../lib/artistCredit.ts";
+import { MBID_PATTERN } from "../../../../lib/mbid.ts";
 
 export function OwnedTrackMark() {
   return (
@@ -58,6 +64,63 @@ export const releaseTrackPayload = (
     discNumber: track?.discNumber,
     reason: null,
   });
+
+// The whole release, loaded when dropped, so a drag costs no lookup.
+export const releaseGroupDrag = (
+  release: ReleaseGroup,
+  artistName: string,
+  artistMbid: string | null | undefined,
+): PlaylistDrag => ({
+  label: release.title || "Album",
+  load: async () =>
+    (release.id ? await getReleaseGroupTracks(release.id) : []).map((track) => ({
+      ...releaseTrackPayload(release, track, artistName, artistMbid),
+      artistName: albumTrackArtist(
+        artistName,
+        artistMbid ?? null,
+        track.credits?.length ? formatArtistCredit(track.credits) : null,
+      ),
+    })),
+});
+
+export const namedAlbumDrag = (artistName: string, albumName: string): PlaylistDrag => ({
+  label: albumName,
+  load: async () => {
+    const { artistMbid, albumMbid } = await resolveCatalogIds({
+      artist: artistName,
+      album: albumName,
+    });
+    return albumMbid
+      ? releaseGroupDrag({ id: albumMbid, title: albumName }, artistName, artistMbid).load()
+      : [];
+  },
+});
+
+// An album from search or a chart: by its MusicBrainz id when it has one,
+// otherwise looked up by name on drop.
+export const catalogAlbumDrag = ({
+  id,
+  title,
+  artistName,
+  artistMbid,
+  releaseDate,
+}: {
+  id?: string | number | null;
+  title?: string | null;
+  artistName?: string | null;
+  artistMbid?: string | null;
+  releaseDate?: string | null;
+}): PlaylistDrag | null => {
+  if (!title) return null;
+  if (typeof id === "string" && MBID_PATTERN.test(id)) {
+    return releaseGroupDrag(
+      { id, title, "first-release-date": releaseDate ?? undefined },
+      artistName || "",
+      artistMbid,
+    );
+  }
+  return artistName ? namedAlbumDrag(artistName, title) : null;
+};
 
 export function useReleasePreviewQueue({
   release,
@@ -175,10 +238,12 @@ export function useReleaseTracks({
 }) {
   const { awaitingRelease, isOwned: isOwnedReleaseTrack } = preview;
   const { showError } = useToast();
+  const { hasPermission } = useAuth();
   const { isTrackDownloading } = useActiveDownloads();
   const getQueueItems = useQueueTrackActions();
   const { savingKeys, addTrackToLibrary } = useAddTrackToLibrary();
 
+  const canUsePlaylists = hasPermission("accessPlaylists");
   const defaultPlaylistName = reserveUniquePlaylistName(
     playlists.staticPlaylists,
     `${artistName || "Artist"} Picks`,
@@ -234,6 +299,10 @@ export function useReleaseTracks({
       subtitle: preview.creditFor(track),
       time: formatDuration(track.length) || "—",
       missing: !isOwned,
+      drag:
+        canUsePlaylists && playlistTrack.artistName && playlistTrack.trackName
+          ? { label: title, load: () => [playlistTrack] }
+          : null,
       ...preview.previewPlayback(track, index),
       trailing: isOwned ? (
         <OwnedTrackMark />

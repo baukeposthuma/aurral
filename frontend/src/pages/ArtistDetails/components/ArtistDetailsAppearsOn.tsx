@@ -8,6 +8,7 @@ import type { ArtistDetailsLibrary } from "../hooks/useArtistDetailsLibrary";
 import { useArtistReleaseShelf } from "../hooks/useResponsiveReleaseLimit";
 import RouteLink from "../../../components/RouteLink";
 import { ArtistReleaseCard } from "./ArtistReleaseCard";
+import { releaseGroupDrag } from "../../album/releaseTracks.tsx";
 
 const sortLatest = <T extends ReleaseGroup>(items: T[]): T[] =>
   [...items].sort((a, b) =>
@@ -70,6 +71,11 @@ export function ArtistDetailsAppearsOn({
             <ArtistReleaseCard
               key={releaseGroup.id}
               releaseGroup={releaseGroup}
+              drag={releaseGroupDrag(
+                releaseGroup,
+                releaseGroup["artist-credit"]?.[0]?.name || artistName || artist?.name || "",
+                releaseGroup["artist-credit"]?.[0]?.artist?.id ?? artist?.id,
+              )}
               coverUrl={coverUrl}
               fallbackCoverUrl={artistCoverImage}
               link={getReleaseGroupLink(releaseGroup, {

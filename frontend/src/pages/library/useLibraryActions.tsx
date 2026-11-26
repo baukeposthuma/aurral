@@ -107,6 +107,7 @@ import {
   reserveUniquePlaylistName,
 } from "../../utils/staticPlaylists.ts";
 import { trackDownloadActionLabel } from "../../utils/trackDownloadLabel.ts";
+import type { PlaylistDrag } from "../../utils/playlistDrag.ts";
 
 type LibraryInfoState = LibraryTarget & {
   artist?: LibraryArtist | null;
@@ -410,13 +411,9 @@ export function useLibraryActions({
     ],
   );
 
-  const saveLibraryTracksToPlaylist = useCallback(
-    async (
-      tracks: LibraryPageTrack[],
-      target: PlaylistTarget,
-      { lookup = null, ...options }: SaveTracksOptions,
-    ) => {
-      const payloads = tracks
+  const libraryTrackPayloads = useCallback(
+    (tracks: LibraryPageTrack[], lookup: LibraryLookup | null = null) =>
+      tracks
         .map((track) => {
           const album = getAlbumForTrack(track, lookup?.albumsById);
           const artist = getArtistForAlbum(album, lookup?.artistsById);
@@ -431,7 +428,17 @@ export function useLibraryActions({
             durationMs: trackDurationMs(track),
           });
         })
-        .filter((payload) => payload.artistName && payload.trackName);
+        .filter((payload) => payload.artistName && payload.trackName),
+    [getAlbumForTrack, getArtistForAlbum],
+  );
+
+  const saveLibraryTracksToPlaylist = useCallback(
+    async (
+      tracks: LibraryPageTrack[],
+      target: PlaylistTarget,
+      { lookup = null, ...options }: SaveTracksOptions,
+    ) => {
+      const payloads = libraryTrackPayloads(tracks, lookup);
       if (!payloads.length) {
         showError(
           tracks.length === 1 ? "Track details are incomplete" : "No Library tracks to add",
@@ -440,7 +447,7 @@ export function useLibraryActions({
       }
       await savePlaylistTracks(payloads, target, options);
     },
-    [getAlbumForTrack, getArtistForAlbum, savePlaylistTracks, showError],
+    [libraryTrackPayloads, savePlaylistTracks, showError],
   );
 
   const addLibraryTrackToPlaylist = useCallback(
@@ -1175,6 +1182,25 @@ export function useLibraryActions({
     ),
   });
 
+  const canUsePlaylists = hasPermission("accessPlaylists");
+
+  const collectionDrag = (
+    label: string,
+    load: () => Promise<LibraryCollection>,
+  ): PlaylistDrag | null =>
+    canUsePlaylists
+      ? {
+          label,
+          load: async () => {
+            const { tracks, lookup } = await load();
+            return libraryTrackPayloads(
+              tracks.filter((track) => firstAvailableFile(track)),
+              lookup,
+            );
+          },
+        }
+      : null;
+
   const albumMenuProps = (album: LibraryAlbum, load: () => Promise<LibraryCollection>) =>
     collectionPlaylistMenu({
       key: "album:" + album.id,
@@ -1359,6 +1385,9 @@ export function useLibraryActions({
       key: track.id,
       number: index + 1,
       title: track.title || "Unknown Track",
+      drag: canUsePlaylists
+        ? { label: track.title || "Track", load: () => libraryTrackPayloads([track]) }
+        : null,
       badge: !trackMonitoring.isMonitored(track) ? (
         <span className="native-library-track__unmonitored" role="img" aria-label="Not monitored">
           <EyeOff aria-hidden="true" />
@@ -1595,6 +1624,7 @@ export function useLibraryActions({
     collectionQueueItems,
     collectionPlayItems,
     collectionPlaylistMenu,
+    collectionDrag,
     albumMenuProps,
     discoverArtistState,
     buildLibraryTrackRow,

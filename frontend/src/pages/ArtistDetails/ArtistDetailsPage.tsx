@@ -391,7 +391,19 @@ function ArtistDetailsPage() {
           : undefined
       }
     >
-      <ArtistDetailsHero artist={artist} coverImages={coverImages} onCoverError={refreshCover} />
+      <ArtistDetailsHero
+        artist={artist}
+        coverImages={coverImages}
+        onCoverError={refreshCover}
+        drag={
+          hasPermission("accessPlaylists") && previewTracks.length
+            ? {
+                label: artist?.name || artistNameFromNav || "Artist",
+                load: () => previewTracks.map(buildPreviewTrackPayload),
+              }
+            : null
+        }
+      />
 
       <ArtistDetailsActionBar
         library={library}

@@ -93,6 +93,7 @@ import {
 } from "./library/libraryShared.tsx";
 import { getApiErrorMessage, getApiErrorText } from "../utils/api/errors.ts";
 import { genreKey } from "../../../lib/genreKey.ts";
+import { playlistDragProps } from "../utils/playlistDrag.ts";
 
 type LibraryData = LibraryViewLibrary;
 
@@ -845,6 +846,9 @@ function LibraryPage() {
         data-library-menu-target
         data-artwork-scope
         key={artist.id}
+        {...playlistDragProps(
+          actions.collectionDrag(artist.name || "Artist", () => loadArtistTracks(artist)),
+        )}
       >
         <div className="native-library-card__cover-wrap">
           <RouteLink
@@ -944,6 +948,9 @@ function LibraryPage() {
         data-library-menu-target
         data-artwork-scope
         key={album.id}
+        {...playlistDragProps(
+          actions.collectionDrag(album.title || "Album", () => loadAlbumCollection(album)),
+        )}
       >
         <div className="native-library-card__cover-wrap">
           <RouteLink

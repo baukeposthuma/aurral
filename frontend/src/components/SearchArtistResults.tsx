@@ -7,6 +7,8 @@ import Tooltip from "./Tooltip";
 import RouteLink from "./RouteLink";
 import type { ArtistFeedbackAction } from "../utils/artistTaste";
 import { artworkHoverTint } from "../utils/imageColors.ts";
+import { catalogArtistDrag, playlistDragProps } from "../utils/playlistDrag.ts";
+import { useAuth } from "../contexts/AuthContext";
 
 type SearchArtistLifeSpan = {
   begin?: string | null;
@@ -111,6 +113,11 @@ export function SearchArtistCard({
     inLibrary: isInLibrary,
   };
   const artistPath = `/artist/${artistId}`;
+  const dragProps = playlistDragProps(
+    useAuth().hasPermission("accessPlaylists")
+      ? catalogArtistDrag(String(artistId ?? ""), artist.name)
+      : null,
+  );
 
   const cover = (
     <div
@@ -145,7 +152,11 @@ export function SearchArtistCard({
 
   if (isList) {
     return (
-      <article className="artist-release-list-item search-artist-results__item" data-artwork-scope>
+      <article
+        className="artist-release-list-item search-artist-results__item"
+        data-artwork-scope
+        {...dragProps}
+      >
         {cover}
         <RouteLink
           to={artistPath}
@@ -173,6 +184,7 @@ export function SearchArtistCard({
       data-artwork-scope
       data-library-menu-target
       {...artworkHoverTint}
+      {...dragProps}
     >
       {cover}
 

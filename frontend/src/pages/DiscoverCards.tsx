@@ -20,6 +20,9 @@ import RouteLink from "../components/RouteLink";
 import type { DiscoverArtist } from "../utils/discoverUtils";
 import type { useDiscoverData } from "./useDiscoverData.ts";
 import type { RecentRelease, useReleaseAlbumAction } from "./useReleaseAlbumAction.ts";
+import { artistDrag, namedArtistDrag, playlistDragProps } from "../utils/playlistDrag.ts";
+import { releaseGroupDrag } from "./album/releaseTracks.tsx";
+import { useAuth } from "../contexts/AuthContext";
 
 export type DiscoverCardArtist = Partial<DiscoverArtist> & {
   libraryPath?: string | null;
@@ -85,6 +88,8 @@ export const ArtistCard = memo(
     feedbackUsed?: Partial<Record<"more_like_this" | "less_like_this" | "block_artist", boolean>>;
     hideLibraryCheck?: boolean;
   }) => {
+    const { hasPermission } = useAuth();
+    const canUsePlaylists = hasPermission("accessPlaylists");
     const navigateTo = artist.navigateTo || artist.id;
     const hasValidMbid = navigateTo && navigateTo !== "null" && navigateTo !== "undefined";
     const artistMetaText = artist.metaText;
@@ -107,6 +112,13 @@ export const ArtistCard = memo(
         data-artwork-scope
         data-library-menu-target
         {...artworkHoverTint}
+        {...playlistDragProps(
+          canUsePlaylists && artist.name
+            ? hasValidMbid
+              ? artistDrag(navigateTo, artist.name)
+              : namedArtistDrag(artist.name)
+            : null,
+        )}
       >
         <div className="artist-discover-card__cover" data-artwork>
           <ArtistImage
@@ -190,6 +202,7 @@ export const AlbumCard = memo(
     onAlbumAction: DiscoverAlbumAction;
   }) => {
     const { releaseGroupMbid, artistMbid } = album;
+    const canUsePlaylists = useAuth().hasPermission("accessPlaylists");
     const { isAlbumDownloading } = useActiveDownloads();
     const downloading = isPending || isAlbumDownloading(releaseGroupMbid);
     const [fetchedCover, setFetchedCover] = useState<string | null>(null);
@@ -256,6 +269,19 @@ export const AlbumCard = memo(
         className={`artist-discover-card artist-discover-card--album${canOpen ? "" : " is-disabled"}`}
         data-artwork-scope
         {...artworkHoverTint}
+        {...playlistDragProps(
+          canUsePlaylists && releaseGroupMbid
+            ? releaseGroupDrag(
+                {
+                  id: releaseGroupMbid,
+                  title: album.albumName,
+                  "first-release-date": album.releaseDate ?? undefined,
+                },
+                album.artistName || "",
+                artistMbid,
+              )
+            : null,
+        )}
       >
         <div className="artist-discover-card__cover-wrap">
           <div

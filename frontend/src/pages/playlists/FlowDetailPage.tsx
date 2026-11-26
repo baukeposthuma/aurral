@@ -49,6 +49,7 @@ import { copyText } from "../../utils/shareLink.ts";
 import { routeStateOf } from "../../navigation/routeState.ts";
 import { normalizeNameKey, reserveUniqueName } from "../../utils/staticPlaylists.ts";
 import { serverUrl } from "../../utils/server.ts";
+import { savedPlaylistDrag } from "../../utils/playlistDrag.ts";
 
 const FlowEditor = lazy(() => import("./FlowEditor.tsx"));
 
@@ -270,6 +271,7 @@ function FlowDetail({ flow }: { flow: Flow }) {
   return (
     <CollectionPage tintSrc={artworkUrlFor(flow.id)} className="playlist-page">
       <CollectionHeader
+        drag={savedPlaylistDrag(flow.id, flow.name)}
         cover={
           <button
             type="button"

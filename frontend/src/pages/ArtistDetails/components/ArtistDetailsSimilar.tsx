@@ -16,6 +16,8 @@ import ArtistImage from "../../../components/ArtistImage";
 import { ArtistContextMenu } from "../../../components/ArtistContextMenu";
 import TooltipButton from "../../../components/TooltipButton";
 import RouteLink from "../../../components/RouteLink";
+import { catalogArtistDrag, playlistDragProps } from "../../../utils/playlistDrag.ts";
+import { useAuth } from "../../../contexts/AuthContext";
 
 type SimilarArtist = SimilarArtistsResponse["artists"][number];
 
@@ -44,6 +46,7 @@ export function ArtistDetailsSimilar({
   );
 
   const shelf = useShelfScroll(similarArtists.length);
+  const canUsePlaylists = useAuth().hasPermission("accessPlaylists");
   const { canScrollLeft, canScrollRight } = shelf;
 
   useEffect(() => {
@@ -120,6 +123,9 @@ export function ArtistDetailsSimilar({
                 className="artist-similar-card"
                 data-artwork-scope
                 data-library-menu-target
+                {...playlistDragProps(
+                  canUsePlaylists ? catalogArtistDrag(artistKey, similar.name) : null,
+                )}
               >
                 <div className="artist-similar-avatar" data-artwork>
                   <ArtistImage

@@ -10,6 +10,8 @@ import type { ArtistDetailsLibrary } from "../hooks/useArtistDetailsLibrary.ts";
 import { getReleaseYear, isNewReleaseGroup } from "../utils";
 import type { ReleaseGroup, ReleaseMetricValue } from "../utils";
 import { ReleaseMetric } from "./ReleaseMetric";
+import { playlistDragProps, type PlaylistDrag } from "../../../utils/playlistDrag.ts";
+import { useAuth } from "../../../contexts/AuthContext";
 
 type AlbumStatus = ReturnType<ArtistDetailsLibrary["getAlbumStatus"]>;
 
@@ -130,6 +132,7 @@ export function ArtistReleaseCard({
   onDownload,
   metric = null,
   headingLevel: Heading = "h3",
+  drag = null,
 }: {
   releaseGroup: ReleaseGroup;
   coverUrl: string | null | undefined;
@@ -142,12 +145,18 @@ export function ArtistReleaseCard({
   onDownload: (() => void) | null;
   metric?: ReleaseMetricValue | null;
   headingLevel?: "h2" | "h3";
+  drag?: PlaylistDrag | null;
 }) {
+  const { hasPermission } = useAuth();
   const title = releaseGroup.title || "Untitled release";
   const canDownload =
     onDownload && (!status || status.status === "monitored" || status.status === "unmonitored");
   return (
-    <article className="artist-release-tile" data-artwork-scope>
+    <article
+      className="artist-release-tile"
+      data-artwork-scope
+      {...playlistDragProps(hasPermission("accessPlaylists") ? drag : null)}
+    >
       <div className="artist-release-tile__cover" data-artwork>
         <ReleaseCoverImage
           src={coverUrl}

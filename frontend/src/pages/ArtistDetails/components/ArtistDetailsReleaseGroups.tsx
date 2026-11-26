@@ -17,6 +17,7 @@ import RouteLink from "../../../components/RouteLink";
 import { albumPath } from "../../../../../lib/albumPath.ts";
 import { preferStudioReleases } from "../releaseFilters.ts";
 import { ArtistReleaseCard } from "./ArtistReleaseCard";
+import { releaseGroupDrag } from "../../album/releaseTracks.tsx";
 
 const viewModes = [
   { value: "popular", label: "Popular" },
@@ -170,6 +171,7 @@ export function ArtistDetailsReleaseGroups({
             <ArtistReleaseCard
               key={releaseGroup.id}
               releaseGroup={releaseGroup}
+              drag={releaseGroupDrag(releaseGroup, artistName || artist?.name || "", artist?.id)}
               coverUrl={coverUrl}
               fallbackCoverUrl={artistCoverImage}
               link={

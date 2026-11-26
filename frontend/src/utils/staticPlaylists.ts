@@ -1,4 +1,4 @@
-interface ImportedTrack {
+export interface ImportedTrack {
   artistName?: unknown;
   artist?: unknown;
   artist_name?: unknown;
@@ -160,3 +160,17 @@ export const buildStaticPlaylistTrackPayload = ({
   reason,
   artistAliases: [],
 });
+
+// A user adds tracks only to playlists they own or collaborate on. A synced
+// playlist would lose the tracks at its next sync.
+export const canAddTracksToPlaylist = (
+  playlist: {
+    ownerUserId: number | null;
+    members?: { id: number }[];
+    importSource?: { syncEnabled?: boolean } | null;
+  },
+  userId: number | null | undefined,
+) =>
+  userId != null &&
+  playlist.importSource?.syncEnabled !== true &&
+  (playlist.ownerUserId === userId || Boolean(playlist.members?.some(({ id }) => id === userId)));

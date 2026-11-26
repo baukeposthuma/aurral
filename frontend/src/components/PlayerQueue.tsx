@@ -26,8 +26,21 @@ import { useAuth } from "../contexts/AuthContext";
 import { CreatePlaylistModal } from "./PlaylistModals";
 import { useTrackSaveActions } from "../hooks/useTrackSaveActions";
 import { reserveUniquePlaylistName } from "../utils/staticPlaylists.ts";
+import { playlistDragProps } from "../utils/playlistDrag.ts";
 
 type QueueEntry = AudioQueueValue["upcoming"][number];
+type QueueTrack = QueueEntry["track"];
+
+const queuePlaylistTrack = (track: QueueTrack) => ({
+  id: track.entryId,
+  artistName: track.artist ?? "",
+  trackName: track.title ?? "",
+  albumName: track.album,
+  artistMbid: track.artistMbid,
+  albumMbid: track.albumMbid,
+  trackMbid: track.trackMbid,
+  durationMs: track.durationMs,
+});
 
 function QueueArt({ src }: { src?: string | null }) {
   const [failedSrc, setFailedSrc] = useState<string | null>(null);
@@ -66,6 +79,7 @@ function QueueRow({ entry, onPlay, onRemove }: QueueRowProps) {
     transition,
     isDragging,
   } = useSortable({ id: track.entryId });
+  const canUsePlaylists = useAuth().hasPermission("accessPlaylists");
   const title = track.title || "Track";
 
   return (
@@ -84,7 +98,16 @@ function QueueRow({ entry, onPlay, onRemove }: QueueRowProps) {
       >
         <GripVertical aria-hidden="true" />
       </button>
-      <button type="button" className="player-queue__track" onClick={() => onPlay(entry.index)}>
+      <button
+        type="button"
+        className="player-queue__track"
+        onClick={() => onPlay(entry.index)}
+        {...playlistDragProps(
+          canUsePlaylists && track.artist && track.title
+            ? { label: title, load: () => [queuePlaylistTrack(track)] }
+            : null,
+        )}
+      >
         <QueueArt src={track.artwork} />
         <span className="player-queue__copy">
           <span className="player-queue__name">{title}</span>
@@ -133,27 +156,13 @@ function QueueList({ entries, className = "", onReorder }: QueueListProps) {
 
 const entryIdsOf = (entries: QueueEntry[]) => entries.map(({ track }) => track.entryId);
 
-type QueueTrack = QueueEntry["track"];
-
 function SaveQueueButton({ tracks }: { tracks: QueueTrack[] }) {
   const { playlists, onBulkAddToPlaylist, bulkActionLoading } = useTrackSaveActions();
   const [open, setOpen] = useState(false);
   if (!onBulkAddToPlaylist) return null;
 
   const save = async (name: string) => {
-    await onBulkAddToPlaylist(
-      tracks.map((track) => ({
-        id: track.entryId,
-        artistName: track.artist ?? "",
-        trackName: track.title ?? "",
-        albumName: track.album,
-        artistMbid: track.artistMbid,
-        albumMbid: track.albumMbid,
-        trackMbid: track.trackMbid,
-        durationMs: track.durationMs,
-      })),
-      { mode: "new", name },
-    );
+    await onBulkAddToPlaylist(tracks.map(queuePlaylistTrack), { mode: "new", name });
     setOpen(false);
   };
 

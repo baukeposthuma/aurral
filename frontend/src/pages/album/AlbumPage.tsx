@@ -68,6 +68,7 @@ import ArtworkLightbox from "../../components/ArtworkLightbox.tsx";
 import { useAlbumEditions } from "./useAlbumEditions.tsx";
 import StatePanel from "../../components/StatePanel";
 import { getApiErrorMessage } from "../../utils/api/errors.ts";
+import { combinedDrag } from "../../utils/playlistDrag.ts";
 
 function AlbumPage() {
   const { ref: routeRef } = useParams();
@@ -585,6 +586,14 @@ function AlbumPage() {
       {actions.renderModals()}
       {albumState.albumMonitoring.dialog}
       <CollectionHeader
+        drag={
+          libraryAlbum
+            ? actions.collectionDrag(title || "Album", loadAlbumDetail)
+            : combinedDrag(
+                title || "Album",
+                rows.map((row) => row.drag),
+              )
+        }
         cover={
           !artwork && headerPending ? (
             <SkeletonShape className="skeleton-fill" />

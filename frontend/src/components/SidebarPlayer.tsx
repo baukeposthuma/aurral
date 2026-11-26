@@ -4,6 +4,8 @@ import ArtworkImage from "./ArtworkImage";
 import PlayerDevicesButton from "./PlayerDevicesButton";
 import { PlayerMiniProgress } from "./PlayerProgress";
 import { ChevronRight, Music, Pause, Play } from "./icons";
+import { playlistDragProps } from "../utils/playlistDrag.ts";
+import { useAuth } from "../contexts/AuthContext";
 
 type SidebarPlayerProps = {
   iconsOnly: boolean;
@@ -17,6 +19,7 @@ function SidebarPlayer({ iconsOnly, onRestore, onTooltip }: SidebarPlayerProps) 
   const title = currentTrack?.title || "Nothing playing";
   const playing = isPlaying || isStarting;
   const PlayPauseIcon = playing ? Pause : Play;
+  const canUsePlaylists = useAuth().hasPermission("accessPlaylists");
 
   return (
     <div className={`sidebar-player${iconsOnly ? " sidebar-player--icons" : ""}`}>
@@ -27,6 +30,24 @@ function SidebarPlayer({ iconsOnly, onRestore, onTooltip }: SidebarPlayerProps) 
         onMouseEnter={onTooltip}
         onFocus={onTooltip}
         aria-label={currentTrack ? `Show player: ${title}` : "Show player"}
+        {...playlistDragProps(
+          canUsePlaylists && currentTrack?.artist && currentTrack.title
+            ? {
+                label: currentTrack.title,
+                load: () => [
+                  {
+                    artistName: currentTrack.artist,
+                    trackName: currentTrack.title,
+                    albumName: currentTrack.album,
+                    artistMbid: currentTrack.artistMbid,
+                    albumMbid: currentTrack.albumMbid,
+                    trackMbid: currentTrack.trackMbid,
+                    durationMs: currentTrack.durationMs,
+                  },
+                ],
+              }
+            : null,
+        )}
       >
         <span className="sidebar-player__art" aria-hidden="true">
           {currentTrack?.artwork && currentTrack.artwork !== failedArtwork ? (

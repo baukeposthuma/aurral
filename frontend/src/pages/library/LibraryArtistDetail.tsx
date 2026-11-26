@@ -21,6 +21,7 @@ import {
   type LibraryCollection,
 } from "./useLibraryActions.tsx";
 import { Cover, EmptyState, hasMbid, type LibraryPageTrack } from "./libraryShared.tsx";
+import { playlistDragProps } from "../../utils/playlistDrag.ts";
 
 export type AlbumCardOptions = { showArtist?: boolean; showType?: boolean; showTotal?: boolean };
 
@@ -117,16 +118,19 @@ export function LibraryArtistDetail({
     trackTotal ? count(trackTotal, "track") : "",
     plays ? count(plays, "play") : "",
   ].filter(Boolean);
+  const dragProps = playlistDragProps(actions.collectionDrag(name, loadTracks));
 
   return (
     <section className="library-artist">
       <div className="library-artist__hero" data-library-menu-target>
-        <div className="library-artist__photo" style={artworkStyle}>
+        <div className="library-artist__photo" style={artworkStyle} {...dragProps}>
           <Cover src={artist.coverUrl} label={artist.name} thumbnail={false} round />
         </div>
         <div className="library-artist__body">
-          <h1 className="library-artist__name">{name}</h1>
-          {meta.length ? <p className="library-artist__meta">{meta.join(" · ")}</p> : null}
+          <div {...dragProps}>
+            <h1 className="library-artist__name">{name}</h1>
+            {meta.length ? <p className="library-artist__meta">{meta.join(" · ")}</p> : null}
+          </div>
           <div className="library-artist__actions native-library-detail__actions">
             <TooltipButton
               className="btn btn-accent btn-round-lg library-artist__play"

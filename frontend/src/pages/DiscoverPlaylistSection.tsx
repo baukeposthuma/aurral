@@ -7,6 +7,8 @@ import { formatTrackTotal } from "./playlists/playlistPageUtils";
 import type { BrowseProvider } from "../../../lib/browsePlaylists.ts";
 import { usePlaylistClaims } from "./usePlaylistShelf";
 import { friendPath } from "../../../lib/profilePaths.ts";
+import { browsePlaylistDrag } from "../utils/playlistDrag.ts";
+import { useAuth } from "../contexts/AuthContext";
 
 export interface BrowseShelfPlaylist {
   provider: BrowseProvider;
@@ -44,6 +46,7 @@ export function DiscoverPlaylistSection({
   viewAllTo?: string;
 }) {
   const claimOf = usePlaylistClaims();
+  const { user } = useAuth();
   if (playlists.length === 0) return null;
   return (
     <DiscoverRail title={title} viewAllTo={viewAllTo}>
@@ -53,6 +56,7 @@ export function DiscoverPlaylistSection({
           return (
             <PlaylistCard
               key={`${playlist.provider}:${playlist.id}`}
+              drag={browsePlaylistDrag(user?.id, playlist.provider, playlist.id, playlist.name)}
               to={browsePlaylistPath(playlist.provider, playlist.id)}
               state={{
                 seed: {

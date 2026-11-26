@@ -6,6 +6,7 @@ import TooltipButton from "./TooltipButton";
 import { useSharedArtworkStyle } from "../navigation/viewTransitions.ts";
 import { getArtistCover } from "../utils/api/endpoints/artists.ts";
 import { queryKeys } from "../queryClient.ts";
+import { playlistDragProps, type PlaylistDrag } from "../utils/playlistDrag.ts";
 
 export function useCollectionTint(src: string | null | undefined) {
   const wash = useArtworkWash(src || null);
@@ -104,6 +105,7 @@ interface CollectionHeaderProps {
   actions?: ReactNode;
   corner?: ReactNode;
   embedded?: boolean;
+  drag?: PlaylistDrag | null;
 }
 
 export function CollectionHeader({
@@ -115,7 +117,9 @@ export function CollectionHeader({
   actions,
   corner,
   embedded = false,
+  drag = null,
 }: CollectionHeaderProps) {
+  const dragProps = playlistDragProps(drag);
   const artworkStyle = useSharedArtworkStyle();
   const Title = embedded ? "h2" : "h1";
   const coverProps = embedded ? { "data-artwork": "" } : { style: artworkStyle };
@@ -125,17 +129,19 @@ export function CollectionHeader({
       data-artwork-scope={embedded ? "" : undefined}
     >
       {corner ? <div className="collection-header__corner">{corner}</div> : null}
-      <div className="native-library-detail__cover" {...coverProps}>
+      <div className="native-library-detail__cover" {...coverProps} {...dragProps}>
         {cover}
       </div>
       <div className="native-library-detail__body">
-        <Title className="collection-header__title">{title}</Title>
-        {typeof subtitle === "string" ? (
-          <p className="collection-header__description">{subtitle}</p>
-        ) : subtitle ? (
-          <div className="collection-header__subtitle">{subtitle}</div>
-        ) : null}
-        {meta ? <p className="native-library-detail__meta">{meta}</p> : null}
+        <div className="collection-header__drag" {...dragProps}>
+          <Title className="collection-header__title">{title}</Title>
+          {typeof subtitle === "string" ? (
+            <p className="collection-header__description">{subtitle}</p>
+          ) : subtitle ? (
+            <div className="collection-header__subtitle">{subtitle}</div>
+          ) : null}
+          {meta ? <p className="native-library-detail__meta">{meta}</p> : null}
+        </div>
         {status}
         {actions ? <div className="native-library-detail__actions">{actions}</div> : null}
       </div>

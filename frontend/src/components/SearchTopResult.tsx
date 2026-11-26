@@ -17,6 +17,9 @@ import { useToast } from "../contexts/ToastContext";
 import { isAlbumCompleteInLibrary } from "../utils/albumAddAction";
 import { useArtistPreviewPlayback } from "../hooks/useArtistPreviewPlayback";
 import { getArtistRecordId } from "../utils/artistTaste";
+import { playlistDragProps } from "../utils/playlistDrag.ts";
+import { searchItemDrag } from "../pages/searchPageUtils.ts";
+import { useAuth } from "../contexts/AuthContext";
 import {
   getReleaseTypeLabel,
   getSearchResultLink,
@@ -168,8 +171,14 @@ export default function SearchTopResult({
       <SongAction song={item} canDownload={albumProps.canAddAlbum} />
     ) : null;
 
+  const canUsePlaylists = useAuth().hasPermission("accessPlaylists");
+  const drag = canUsePlaylists ? searchItemDrag(item) : null;
+
   return (
-    <article className={`search-top${item.type === "artist" ? " search-top--artist" : ""}`}>
+    <article
+      className={`search-top${item.type === "artist" ? " search-top--artist" : ""}`}
+      {...playlistDragProps(drag)}
+    >
       <span className="search-top__art" aria-hidden="true">
         {item.type === "artist" ? (
           <ArtistImage {...artistImageProps(item)} artistName={item.name} alt="" sizes="13rem" />

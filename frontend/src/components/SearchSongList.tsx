@@ -23,6 +23,8 @@ import {
 import { trackDownloadActionLabel } from "../utils/trackDownloadLabel.ts";
 import { formatDuration } from "../pages/library/libraryShared.tsx";
 import { searchTrackPayload } from "../pages/searchPageUtils.ts";
+import { playlistDragProps } from "../utils/playlistDrag.ts";
+import { useAuth } from "../contexts/AuthContext";
 
 type SearchSongListProps = {
   songs: SearchItem[];
@@ -171,6 +173,12 @@ function SongRow({
   const album = song.albumTitle || "";
   const artistLink = getTrackArtistLink(song);
   const albumLink = album ? getTrackAlbumLink(song) : null;
+  const { hasPermission } = useAuth();
+  const payload = searchTrackPayload(song);
+  const drag =
+    hasPermission("accessPlaylists") && payload.artistName && payload.trackName
+      ? { label: payload.trackName, load: () => [payload] }
+      : null;
   const queueItems = playback
     ? [
         {
@@ -184,7 +192,7 @@ function SongRow({
       ]
     : [];
   return (
-    <div className="search-song" role="listitem">
+    <div className="search-song" role="listitem" {...playlistDragProps(drag)}>
       <SongCover song={song} playback={playback} />
       <div className="search-song__copy">
         <span className="search-song__title">

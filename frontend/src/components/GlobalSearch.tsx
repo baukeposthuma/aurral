@@ -49,6 +49,8 @@ import { useAuth } from "../contexts/AuthContext";
 import { useToast } from "../contexts/ToastContext";
 import { getApiErrorMessage, getApiErrorText } from "../utils/api/errors.ts";
 import { asApiError } from "../utils/api/core.ts";
+import { playlistDragProps } from "../utils/playlistDrag.ts";
+import { searchItemDrag } from "../pages/searchPageUtils.ts";
 
 type SuggestionMode = "tag" | "unified";
 type SuggestionItem = SearchSuggestion & {};
@@ -74,6 +76,7 @@ function uniqueTags(tags: string[]) {
 }
 
 function GlobalSearch() {
+  const canUsePlaylists = useAuth().hasPermission("accessPlaylists");
   const [searchQuery, setSearchQuery] = useState("");
   const [suggestionsOpen, setSuggestionsOpen] = useState(false);
   const [highlightedKey, setHighlightedKey] = useState<string | null>(null);
@@ -637,6 +640,7 @@ function GlobalSearch() {
                       className={`global-search__suggestion global-search__suggestion--rich${
                         highlighted ? " is-highlighted" : ""
                       }`}
+                      {...playlistDragProps(canUsePlaylists ? searchItemDrag(item) : null)}
                     >
                       <button
                         type="button"

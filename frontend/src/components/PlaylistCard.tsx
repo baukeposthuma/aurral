@@ -4,6 +4,8 @@ import { Check, ListMusic, RefreshCw } from "./icons";
 import RouteLink from "./RouteLink";
 import Tooltip from "./Tooltip";
 import { artworkHoverTint } from "../utils/imageColors.ts";
+import { playlistDragProps, type PlaylistDrag } from "../utils/playlistDrag.ts";
+import { useAuth } from "../contexts/AuthContext";
 
 export function ClaimBadge({ claim }: { claim: "synced" | "saved" }) {
   const label = claim === "synced" ? "Synced to your playlists" : "In your playlists";
@@ -24,6 +26,7 @@ export default function PlaylistCard({
   artworkUrl,
   meta,
   claim,
+  drag = null,
 }: {
   to: string;
   state?: unknown;
@@ -31,10 +34,15 @@ export default function PlaylistCard({
   artworkUrl: string | null;
   meta: ReactNode;
   claim?: "synced" | "saved";
+  drag?: PlaylistDrag | null;
 }) {
+  const { hasPermission } = useAuth();
   const [failedArtwork, setFailedArtwork] = useState(false);
   return (
-    <div className="artist-discover-shelf-card">
+    <div
+      className="artist-discover-shelf-card"
+      {...playlistDragProps(hasPermission("accessPlaylists") ? drag : null)}
+    >
       <div
         className="artist-discover-card artist-discover-card--playlist"
         data-artwork-scope

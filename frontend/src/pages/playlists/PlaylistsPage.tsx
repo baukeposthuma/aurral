@@ -34,6 +34,7 @@ import { playlistPath } from "../../navigation/playlistPaths";
 import { getApiErrorMessage } from "../../utils/api/errors.ts";
 import { routeStateOf } from "../../navigation/routeState.ts";
 import { normalizeNameKey, reserveUniqueName } from "../../utils/staticPlaylists.ts";
+import { playlistDragProps, savedPlaylistDrag } from "../../utils/playlistDrag.ts";
 import {
   PLAYLIST_SORT_OPTIONS,
   readPlaylistSort,
@@ -198,6 +199,7 @@ export default function PlaylistsPage() {
             role="listitem"
             data-artwork-scope
             key={playlist.id}
+            {...playlistDragProps(savedPlaylistDrag(playlist.id, playlist.name))}
           >
             <div className="native-library-card__cover-wrap">
               <RouteLink

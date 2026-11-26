@@ -50,6 +50,7 @@ import StatePanel from "../../components/StatePanel";
 import Pagination from "../../components/Pagination";
 import { useClampPage, usePageParam } from "../../hooks/usePageParam.ts";
 import "./ArtistDetailsPage.css";
+import { releaseGroupDrag } from "../album/releaseTracks.tsx";
 
 const RELEASE_PAGE_SIZE = 24;
 
@@ -387,6 +388,7 @@ function ArtistReleaseListPage({ mode = "releases" }) {
       <ArtistReleaseCard
         key={releaseGroup.id}
         releaseGroup={releaseGroup}
+        drag={releaseGroupDrag(releaseGroup, artistDisplayName, mbid)}
         coverUrl={cover}
         fallbackCoverUrl={artistCoverImage}
         link={releaseLink(releaseGroup, cover || artistCoverImage || "")}

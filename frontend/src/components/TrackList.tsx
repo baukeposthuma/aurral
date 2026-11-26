@@ -29,6 +29,7 @@ import { LibraryItemMenu } from "./LibraryItemMenu";
 import Tooltip from "./Tooltip";
 import TooltipButton from "./TooltipButton";
 import RouteLink from "./RouteLink";
+import { playlistDragProps, type PlaylistDrag } from "../utils/playlistDrag.ts";
 
 const SORTABLE_HEADINGS = {
   number: "index",
@@ -92,6 +93,7 @@ export type TrackListRow = {
   menu?: Omit<ComponentProps<typeof LibraryItemMenu>, "label">;
   menuElement?: ReactNode;
   favorite?: { active: boolean; pending: boolean; onToggle: () => void } | null;
+  drag?: PlaylistDrag | null;
 };
 
 export function FavoriteButton({
@@ -378,6 +380,7 @@ export function TrackList({
           (row.missing && row.previewOnly ? " is-preview" : "")
         }
         data-library-menu-target={row.menu || row.menuElement ? true : undefined}
+        {...(drag ? {} : playlistDragProps(row.drag))}
         role="listitem"
         aria-current={row.active ? "true" : undefined}
       >

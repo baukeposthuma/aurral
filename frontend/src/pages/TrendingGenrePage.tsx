@@ -111,6 +111,11 @@ export default function TrendingGenrePage() {
   return (
     <CollectionPage tintSrc={covers[0] ?? null}>
       <CollectionHeader
+        drag={
+          trackSaveActions.onBulkAddToPlaylist && tracks.length
+            ? { label: title, load: () => tracks }
+            : null
+        }
         cover={
           <div className="trending-genre-card__cover">
             {covers.map((cover) => (

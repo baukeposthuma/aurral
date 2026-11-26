@@ -5,6 +5,7 @@ import type { ArtistDetailsResponse } from "../../../utils/api/endpoints/artists
 import { withImageCacheBust } from "../../../utils/normalizeMediaUrl";
 import { useSharedArtworkStyle } from "../../../navigation/viewTransitions.ts";
 import { formatCompactNumber } from "../../../utils/numberFormat.ts";
+import { playlistDragProps, type PlaylistDrag } from "../../../utils/playlistDrag.ts";
 
 const HERO_GENRE_LIMIT = 3;
 
@@ -27,10 +28,12 @@ export function ArtistDetailsHero({
   artist,
   coverImages,
   onCoverError,
+  drag = null,
 }: {
   artist: Partial<ArtistDetailsResponse>;
   coverImages: readonly ArtistCoverImage[] | null | undefined;
   onCoverError?: () => void;
+  drag?: PlaylistDrag | null;
 }) {
   const heroImage = getCoverImage(coverImages);
   const [imageFailed, setImageFailed] = useState(false);
@@ -47,7 +50,7 @@ export function ArtistDetailsHero({
 
   return (
     <section className={`artist-hero${showImage ? "" : " artist-hero--plain"}`}>
-      <div className="artist-hero__inner" style={artworkStyle}>
+      <div className="artist-hero__inner" style={artworkStyle} {...playlistDragProps(drag)}>
         {showImage ? (
           <>
             <ArtworkImage

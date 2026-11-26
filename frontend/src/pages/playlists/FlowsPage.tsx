@@ -12,6 +12,7 @@ import { usePlaylistStatus } from "./usePlaylistStatus";
 import { flowPath } from "../../navigation/playlistPaths";
 import type { Flow } from "../../utils/playlistStats.ts";
 import { FlowStarters, NewFlowModal } from "./FlowStarters.tsx";
+import { playlistDragProps, savedPlaylistDrag } from "../../utils/playlistDrag.ts";
 
 export default function FlowsPage() {
   useDocumentTitle("Flows");
@@ -90,7 +91,7 @@ export default function FlowsPage() {
     return (
       <ul className="flows-list" aria-label="Flows">
         {flows.map((flow) => (
-          <li key={flow.id}>
+          <li key={flow.id} {...playlistDragProps(savedPlaylistDrag(flow.id, flow.name))}>
             <RouteLink
               to={flowPath(flow.id)}
               className={`flows-list__link${flow.enabled === true ? "" : " is-off"}`}

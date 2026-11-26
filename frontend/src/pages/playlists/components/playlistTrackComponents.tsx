@@ -46,6 +46,7 @@ import type { LibraryMenuItem } from "../../../components/LibraryItemMenu";
 import type { PlaybackSource } from "../../../hooks/useAlbumTrackListToolbar";
 import type { PlaylistTrackRow } from "../playlistPageUtils.ts";
 import type { StaticPlaylist } from "../../../utils/playlistStats.ts";
+import { tracksLabel } from "../../../utils/playlistDrag.ts";
 
 export type PlaylistPanelTrack = Pick<
   PlaylistTrackRow,
@@ -789,6 +790,16 @@ export function PlaylistTracksPanel<T extends PlaylistPanelTrack>({
               onToggle: () => onToggleFavorite(track),
             }
           : null,
+      drag: hasPlaylistMenu
+        ? selectedIds.has(track.id) && selectedCount > 1
+          ? {
+              label: tracksLabel(selectedCount),
+              load: () => selectedTracks,
+              excludedPlaylistIds,
+              newPlaylistName: "New playlist",
+            }
+          : { label: track.trackName, load: () => [track], excludedPlaylistIds }
+        : null,
       selected: selectedIds.has(track.id),
       onToggleSelected: () =>
         setSelectedIds((prev) => {

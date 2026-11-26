@@ -11,12 +11,16 @@ import { artistPlaylistsQueryOptions } from "../../../utils/api/endpoints/artist
 import { usePlaylistClaims } from "../../usePlaylistShelf";
 import { useShelfScroll } from "../hooks/useShelfScroll.ts";
 import { useArtistReleaseShelf } from "../hooks/useResponsiveReleaseLimit.ts";
+import { browsePlaylistDrag, playlistDragProps } from "../../../utils/playlistDrag.ts";
+import { useAuth } from "../../../contexts/AuthContext";
 
 export function ArtistDetailsPlaylists({ mbid, artistName }: { mbid: string; artistName: string }) {
   const headingId = useId();
   const { data } = useQuery(artistPlaylistsQueryOptions(mbid, artistName));
   const playlists = data?.playlists ?? [];
   const claimOf = usePlaylistClaims();
+  const { user, hasPermission } = useAuth();
+  const canUsePlaylists = hasPermission("accessPlaylists");
   const shelf = useShelfScroll(playlists.length);
   const [gridRef, columns] = useArtistReleaseShelf();
   const { ref: shelfRef } = shelf;
@@ -67,7 +71,16 @@ export function ArtistDetailsPlaylists({ mbid, artistName }: { mbid: string; art
         {playlists.map((playlist) => {
           const claim = claimOf(playlist);
           return (
-            <article key={playlist.id} className="artist-release-tile" data-artwork-scope>
+            <article
+              key={playlist.id}
+              className="artist-release-tile"
+              data-artwork-scope
+              {...playlistDragProps(
+                canUsePlaylists
+                  ? browsePlaylistDrag(user?.id, playlist.provider, playlist.id, playlist.name)
+                  : null,
+              )}
+            >
               <div className="artist-release-tile__cover" data-artwork>
                 <ReleaseCoverImage
                   src={playlist.artworkUrl}

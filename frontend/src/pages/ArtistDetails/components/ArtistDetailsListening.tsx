@@ -7,6 +7,8 @@ import { artistListeningQueryOptions } from "../../../utils/api/endpoints/artist
 import { normalizeStreamQueueTrack } from "../../../utils/audioQueue";
 import { getReleaseGroupCoverUrl, type ReleaseGroup } from "../utils";
 import { ArtistTrackRow } from "./ArtistTrackRow";
+import { buildStaticPlaylistTrackPayload } from "../../../utils/staticPlaylists.ts";
+import { useAuth } from "../../../contexts/AuthContext";
 
 const WEEK_MS = 7 * 86_400_000;
 const MIN_ACTIVE_WEEKS = 8;
@@ -111,6 +113,7 @@ export function ArtistDetailsListening({
   const { data } = useQuery(artistListeningQueryOptions(mbid, artistName));
   const { playTrack, togglePlayPause, matchesSource, currentTrack, isPlaying, isLoading } =
     useAudioQueue();
+  const canUsePlaylists = useAuth().hasPermission("accessPlaylists");
   const listening = data?.listening;
   if (!listening) return null;
 
@@ -175,6 +178,21 @@ export function ArtistDetailsListening({
                 null
               }
               duration={plural(track.plays, "play")}
+              drag={
+                canUsePlaylists
+                  ? {
+                      label: track.title,
+                      load: () => [
+                        buildStaticPlaylistTrackPayload({
+                          artistName,
+                          trackName: track.title,
+                          albumName: track.album || "",
+                          artistMbid: mbid,
+                        }),
+                      ],
+                    }
+                  : null
+              }
               active={active}
               playing={active && (isPlaying || isLoading)}
               onPlay={

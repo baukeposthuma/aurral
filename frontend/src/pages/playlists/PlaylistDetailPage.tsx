@@ -51,6 +51,7 @@ import { apiFetchWithin, asApiError } from "../../utils/api/core.ts";
 import { getApiErrorText } from "../../utils/api/errors.ts";
 import { routeStateOf } from "../../navigation/routeState.ts";
 import { isNativeImportProvider } from "../../../../lib/importProviders.ts";
+import { savedPlaylistDrag } from "../../utils/playlistDrag.ts";
 
 interface PlaylistDetailProps {
   playlist: StaticPlaylist;
@@ -450,6 +451,7 @@ function PlaylistDetail({ playlist, stats, staticPlaylists, fetchStatus }: Playl
   return (
     <CollectionPage tintSrc={artworkUrlFor(playlist.id)} className="playlist-page">
       <CollectionHeader
+        drag={savedPlaylistDrag(playlist.id, playlist.name)}
         cover={
           canManage ? (
             <button

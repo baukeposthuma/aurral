@@ -240,6 +240,11 @@ function BrowsePlaylistDetail({
   return (
     <CollectionPage tintSrc={showArtwork ? artworkUrl : null}>
       <CollectionHeader
+        drag={
+          trackSaveActions.onBulkAddToPlaylist && tracks.length
+            ? { label: shown.name || "Playlist", load: () => tracks }
+            : null
+        }
         cover={
           showArtwork ? (
             <img

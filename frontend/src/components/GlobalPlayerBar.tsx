@@ -69,6 +69,7 @@ import { radioSeedFor } from "../utils/audioQueue";
 import { TrackPlaylistSubmenu } from "./TrackPlaylistMenu";
 import { useTrackSaveActions } from "../hooks/useTrackSaveActions.ts";
 import { buildStaticPlaylistTrackPayload } from "../utils/staticPlaylists.ts";
+import { playlistDragProps } from "../utils/playlistDrag.ts";
 
 const SHEET_EXIT_MS = 260;
 const SHEET_DISMISS_DISTANCE = 120;
@@ -815,7 +816,16 @@ function GlobalPlayerBar({ minimized, onMinimizedChange, rail }: GlobalPlayerBar
       {stageOpen ? <FullscreenPlayer track={currentTrack} onClose={closeStage} /> : null}
 
       <div className="global-player__inner">
-        <div className="global-player__track">
+        <div
+          className="global-player__track"
+          {...playlistDragProps(
+            hasPermission("accessPlaylists") &&
+              playlistPayload.artistName &&
+              playlistPayload.trackName
+              ? { label: playlistPayload.trackName, load: () => [playlistPayload] }
+              : null,
+          )}
+        >
           {minimizeArt(artwork("global-player__art global-player__art--bar"))}
           <div className="global-player__meta">
             <div className="global-player__title-row">

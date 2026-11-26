@@ -97,6 +97,11 @@ export function ArtistDetailsPreviewTracks({
                 playing={active && isArtistPlaybackActive}
                 previewOnly={Boolean(track.preview_url)}
                 onPlay={track.preview_url ? () => handlePreviewPlay(track) : null}
+                drag={
+                  onAddTrackToPlaylist && resolveMembershipTrack
+                    ? { label: track.title, load: () => [resolveMembershipTrack(track)] }
+                    : null
+                }
                 menu={
                   onAddTrackToPlaylist || track.preview_url ? (
                     <TrackPlaylistMenu

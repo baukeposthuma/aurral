@@ -4,6 +4,7 @@ import { Pause, Play } from "../../../components/icons";
 import PreviewChip from "../../../components/PreviewChip";
 import { PlayingIndicator } from "../../../components/TrackList";
 import TooltipButton from "../../../components/TooltipButton";
+import { playlistDragProps, type PlaylistDrag } from "../../../utils/playlistDrag.ts";
 
 export function formatTrackDuration(durationMs: number | null | undefined) {
   const duration = Number(durationMs || 0);
@@ -24,6 +25,7 @@ export function ArtistTrackRow({
   previewOnly = false,
   onPlay,
   menu = null,
+  drag = null,
 }: {
   number: ReactNode;
   title: string;
@@ -36,6 +38,7 @@ export function ArtistTrackRow({
   previewOnly?: boolean;
   onPlay: (() => void) | null;
   menu?: ReactNode;
+  drag?: PlaylistDrag | null;
 }) {
   const playLabel = playing ? `Pause ${title}` : previewOnly ? `Preview ${title}` : `Play ${title}`;
   const indicator = active ? <PlayingIndicator row={{ playing, loading }} /> : null;
@@ -44,6 +47,7 @@ export function ArtistTrackRow({
       className={`artist-track${active ? " is-active" : ""}${onPlay ? "" : " is-unplayable"}`}
       data-library-menu-target={menu ? true : undefined}
       role="listitem"
+      {...playlistDragProps(drag)}
     >
       <span className="artist-track__lead">
         <span className="artist-track__number" aria-hidden="true">

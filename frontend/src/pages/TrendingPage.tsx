@@ -17,7 +17,7 @@ import { useDocumentTitle } from "../hooks/useDocumentTitle";
 import { playlistPath } from "../navigation/playlistPaths";
 import { resolveAlbumPath, resolveArtistPath } from "../navigation/resolveLinks.ts";
 import { queryClient, queryKeys } from "../queryClient.ts";
-import { trendingChartsQueryOptions } from "../queryOptions.ts";
+import { trendingChartsQueryOptions, trendingGenreQueryOptions } from "../queryOptions.ts";
 import { discoveryClient } from "../utils/api/clients/discovery.ts";
 import { normalizePlaylistQueueTrack } from "../utils/audioQueue.ts";
 import { formatRelativeTime } from "../utils/dateTime.ts";
@@ -31,6 +31,8 @@ import { useTrackSaveActions } from "../hooks/useTrackSaveActions";
 import { artworkHoverTint } from "../utils/imageColors.ts";
 import "./TrendingPage.css";
 import StatePanel from "../components/StatePanel";
+import { playlistDragProps } from "../utils/playlistDrag.ts";
+import { namedAlbumDrag } from "./album/releaseTracks.tsx";
 import {
   TRENDING_REGION_CHOICES,
   WORLDWIDE_REGION,
@@ -294,11 +296,17 @@ export default function TrendingPage() {
       : null;
     const leadArtistPath = lead ? resolveArtistPath({ name: lead.artistName }) : null;
     const canSavePlaylist = hasPermission("accessPlaylists");
+    const trackDrag = (track: (typeof tracks)[number] | undefined) =>
+      canSavePlaylist && track ? { label: track.trackName, load: () => [track] } : null;
 
     return (
       <>
         {lead && leadTrack ? (
-          <section className="trending-spotlight" aria-label="No. 1 song">
+          <section
+            className="trending-spotlight"
+            aria-label="No. 1 song"
+            {...playlistDragProps(trackDrag(leadTrack))}
+          >
             {leadArtwork ? (
               <ArtworkImage
                 src={leadArtwork}
@@ -408,7 +416,7 @@ export default function TrendingPage() {
                 const index = offset + 1;
                 const playing = isTrackPlaying(index);
                 return (
-                  <li key={song.key}>
+                  <li key={song.key} {...playlistDragProps(trackDrag(tracks[index]))}>
                     <button
                       type="button"
                       className={`trending-song${currentId === tracks[index]?.id ? " is-current" : ""}`}
@@ -454,7 +462,13 @@ export default function TrendingPage() {
               );
               const to = resolveAlbumPath({ artistName: album.artistName, albumName: album.name });
               return (
-                <div key={album.key} className="artist-discover-shelf-card">
+                <div
+                  key={album.key}
+                  className="artist-discover-shelf-card"
+                  {...playlistDragProps(
+                    canSavePlaylist ? namedAlbumDrag(album.artistName, album.name) : null,
+                  )}
+                >
                   <div
                     className="artist-discover-card artist-discover-card--album"
                     data-artwork-scope
@@ -498,7 +512,26 @@ export default function TrendingPage() {
         {data && data.genres.length > 0 ? (
           <DiscoverRail title="Charts by genre">
             {data.genres.map((genre) => (
-              <div key={genre.id} className="artist-discover-shelf-card">
+              <div
+                key={genre.id}
+                className="artist-discover-shelf-card"
+                {...playlistDragProps(
+                  canSavePlaylist
+                    ? {
+                        label: `Top ${genre.name}`,
+                        load: async () =>
+                          mapPreviewTracks(
+                            (
+                              await queryClient.fetchQuery(
+                                trendingGenreQueryOptions(String(genre.id)),
+                              )
+                            ).items,
+                            `trending-genre-${genre.id}`,
+                          ),
+                      }
+                    : null,
+                )}
+              >
                 <div className="artist-discover-card artist-discover-card--playlist">
                   <div className="artist-discover-card__cover trending-genre-card__cover">
                     {genre.covers.map((cover) => (

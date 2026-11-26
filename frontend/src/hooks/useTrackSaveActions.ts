@@ -9,6 +9,7 @@ import { getApiErrorMessage } from "../utils/api/errors.ts";
 import {
   reserveUniquePlaylistName,
   normalizePlaylistTrackEntry,
+  type ImportedTrack,
 } from "../utils/staticPlaylists.ts";
 
 type SaveTrack = { id: string; artistName: string; trackName: string };
@@ -38,7 +39,7 @@ export function useTrackSaveActions() {
   );
 
   const saveToPlaylist = useCallback(
-    async (tracks: SaveTrack[], target: PlaylistSaveTarget) => {
+    async (tracks: ImportedTrack[], target: PlaylistSaveTarget) => {
       const payloads = tracks
         .map(normalizePlaylistTrackEntry)
         .filter((payload) => payload !== null);
@@ -109,7 +110,7 @@ export function useTrackSaveActions() {
   );
 
   const handleBulkAddToPlaylist = useCallback(
-    async (tracks: SaveTrack[], target: PlaylistSaveTarget) => {
+    async (tracks: ImportedTrack[], target: PlaylistSaveTarget) => {
       setBulkActionLoading(true);
       try {
         await saveToPlaylist(tracks, target);

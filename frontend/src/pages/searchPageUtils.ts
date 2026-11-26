@@ -3,6 +3,8 @@ import { isAwaitingRelease } from "../utils/albumStatus.ts";
 import { getArtistRecordId } from "../utils/artistTaste";
 import { buildStaticPlaylistTrackPayload } from "../utils/staticPlaylists.ts";
 import type { SearchItem } from "../utils/searchNavigation.ts";
+import { catalogAlbumDrag } from "./album/releaseTracks.tsx";
+import { catalogArtistDrag, savedPlaylistDrag, type PlaylistDrag } from "../utils/playlistDrag.ts";
 
 export const PAGE_SIZE = 20;
 export const DEFAULT_ALBUM_SORT = "relevance";
@@ -124,3 +126,17 @@ export const searchTrackPayload = (track: SearchItem) =>
     releaseYear: track.releaseYear ? String(track.releaseYear) : null,
     durationMs: track.durationMs ?? null,
   });
+
+export const searchItemDrag = (item: SearchItem): PlaylistDrag | null => {
+  if (item.type === "artist")
+    return catalogArtistDrag(String(item.mbid ?? item.id ?? ""), item.name);
+  if (item.type === "album") return catalogAlbumDrag({ ...item, id: item.albumMbid ?? item.id });
+  if (item.type === "playlist") {
+    return item.id != null ? savedPlaylistDrag(String(item.id), item.name || "Playlist") : null;
+  }
+  if (item.type !== "track") return null;
+  const payload = searchTrackPayload(item);
+  return payload.artistName && payload.trackName
+    ? { label: payload.trackName, load: () => [payload] }
+    : null;
+};

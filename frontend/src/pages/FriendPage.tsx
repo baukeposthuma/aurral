@@ -30,6 +30,14 @@ import { resolveAlbumPath, resolveArtistPath } from "../navigation/resolveLinks.
 import { albumPath } from "../../../lib/albumPath.ts";
 import { deezerPreviewSearchPath } from "../../../lib/deezerPreview.ts";
 import { BLEND_MIX_PREFIX, FRIEND_BLEND_MIX_PREFIX } from "../../../lib/browsePlaylists.ts";
+import {
+  browsePlaylistDrag,
+  catalogArtistDrag,
+  playlistDragProps,
+  type PlaylistDrag,
+} from "../utils/playlistDrag.ts";
+import { catalogAlbumDrag } from "./album/releaseTracks.tsx";
+import { buildStaticPlaylistTrackPayload } from "../utils/staticPlaylists.ts";
 
 const plays = (count: number) => `${count} ${count === 1 ? "play" : "plays"}`;
 const searchPath = (query: string) => `/search?${new URLSearchParams({ q: query })}`;
@@ -51,6 +59,7 @@ function Ranked({
     art?: string | null;
     round?: boolean;
     play?: RankedPlay | null;
+    drag?: PlaylistDrag | null;
   }[];
 }) {
   if (!rows.length) return null;
@@ -71,7 +80,7 @@ function Ranked({
             </>
           );
           return (
-            <li key={row.key}>
+            <li key={row.key} {...playlistDragProps(row.drag)}>
               {row.play ? (
                 <div className="friend-page__row friend-page__row--play">
                   <RankPlay rank={index + 1} name={row.name} play={row.play} />
@@ -171,11 +180,19 @@ function ProfilePlaylist({
   claim: ReturnType<ReturnType<typeof usePlaylistClaims>>;
 }) {
   const [failed, setFailed] = useState(false);
+  const { user, hasPermission } = useAuth();
   const artworkUrl = resolveAuthenticatedApiAssetUrl(playlist.artworkUrl);
   const blend = isBlend(playlist);
   const tracks = formatTrackTotal(playlist.trackCount);
   return (
-    <li className="discover-feed-tile discover-feed-tile--list">
+    <li
+      className="discover-feed-tile discover-feed-tile--list"
+      {...playlistDragProps(
+        hasPermission("accessPlaylists")
+          ? browsePlaylistDrag(user?.id, playlist.provider, playlist.id, playlist.name)
+          : null,
+      )}
+    >
       <RouteLink
         className="discover-feed-tile__body"
         to={browsePlaylistPath(playlist.provider, playlist.id)}
@@ -337,6 +354,7 @@ function useTopTrackPreviews(id: string, name: string, tracks: TopPlays["tracks"
 
 export function TopPlayLists({ id, name, top }: { id: string; name: string; top: TopPlays }) {
   const previews = useTopTrackPreviews(id, name, top.tracks);
+  const canUsePlaylists = useAuth().hasPermission("accessPlaylists");
   return (
     <div className="friend-page__lists" data-stats={top.stats?.plays ? "" : undefined}>
       {top.stats?.plays ? <ListeningStats stats={top.stats} /> : null}
@@ -351,6 +369,7 @@ export function TopPlayLists({ id, name, top }: { id: string; name: string; top:
           note: plays(artist.plays),
           art: artist.artworkUrl,
           round: true,
+          drag: canUsePlaylists ? catalogArtistDrag(artist.mbid, artist.name) : null,
         }))}
       />
       <Ranked
@@ -364,6 +383,9 @@ export function TopPlayLists({ id, name, top }: { id: string; name: string; top:
           name: album.title,
           note: `${album.artist} · ${plays(album.plays)}`,
           art: album.artworkUrl,
+          drag: canUsePlaylists
+            ? catalogAlbumDrag({ id: album.mbid, title: album.title, artistName: album.artist })
+            : null,
         }))}
       />
       <Ranked
@@ -377,6 +399,20 @@ export function TopPlayLists({ id, name, top }: { id: string; name: string; top:
           name: track.title,
           note: `${track.artist} · ${plays(track.plays)}`,
           play: previews[index],
+          drag:
+            canUsePlaylists && track.artist.trim() && track.title.trim()
+              ? {
+                  label: track.title,
+                  load: () => [
+                    buildStaticPlaylistTrackPayload({
+                      artistName: track.artist,
+                      trackName: track.title,
+                      albumMbid: track.albumMbid || "",
+                      trackMbid: track.mbid || "",
+                    }),
+                  ],
+                }
+              : null,
         }))}
       />
     </div>
