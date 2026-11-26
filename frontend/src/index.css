@@ -13353,7 +13353,7 @@ button.playlist-detail__cover {
   }
 }
 
-.global-player__progress-wrap:focus-within {
+.global-player__progress-wrap:has(:focus-visible) {
   outline: 2px solid var(--aurral-ring);
   outline-offset: 2px;
   border-radius: var(--aurral-radius-round);
