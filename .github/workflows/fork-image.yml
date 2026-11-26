@@ -1,0 +1,70 @@
+name: Fork image
+
+# Builds ghcr.io/<owner>/aurral:latest from this fork's own commits replayed on
+# top of the newest upstream main. Nothing is pushed back to the branch: the
+# rebase only happens inside the runner. If the replay conflicts, the job fails
+# and the previous image keeps running.
+
+on:
+  schedule:
+    - cron: "17 4 * * *"
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fork-image
+  cancel-in-progress: true
+
+env:
+  UPSTREAM: https://github.com/lklynet/aurral.git
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Replay fork commits on upstream main
+        id: rebase
+        run: |
+          git config user.name "fork-image"
+          git config user.email "fork-image@users.noreply.github.com"
+          git remote add upstream "${UPSTREAM}"
+          git fetch --no-tags upstream main
+          git rebase upstream/main
+          echo "upstream=$(git rev-parse --short upstream/main)" >> "${GITHUB_OUTPUT}"
+          echo "head=$(git rev-parse --short HEAD)" >> "${GITHUB_OUTPUT}"
+
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4
+
+      - uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}:latest
+            ghcr.io/${{ github.repository }}:${{ steps.rebase.outputs.head }}
+          platforms: linux/amd64
+          build-args: |
+            APP_VERSION=fork.${{ steps.rebase.outputs.upstream }}+${{ steps.rebase.outputs.head }}
+            GITHUB_REPO=lklynet/aurral
+            RELEASE_CHANNEL=stable
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
