@@ -1,6 +1,8 @@
 import type { PlaylistCoverTemplate } from "../services/playlistCoverTemplates.ts";
 
-export const LISTENING_HISTORY_PRESET_ID = "focus-listening-history";
+import { LISTENING_HISTORY_PRESET_ID } from "../../lib/flows.ts";
+
+export { LISTENING_HISTORY_PRESET_ID };
 export const RELEASE_RADAR_PRESET_ID = "release-radar";
 
 export const DISCOVER_PLAYLIST_PRESETS = [

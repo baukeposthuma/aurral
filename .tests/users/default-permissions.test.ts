@@ -3,13 +3,21 @@ import assert from "node:assert/strict";
 
 import { setupIsolatedBackend, cleanupIsolatedState } from "../helpers/backendTestHarness.ts";
 
-const [isolatedState, { db }, { userOps, dbOps }, { createSystemProvisionedUser }] =
-  await setupIsolatedBackend(
-    "default-permissions",
-    () => import("../../backend/config/db-sqlite.ts"),
-    () => import("../../backend/db/helpers/index.ts"),
-    () => import("../../backend/services/auth.ts"),
-  );
+const [
+  isolatedState,
+  { db },
+  { userOps, dbOps },
+  { createSystemProvisionedUser },
+  { startNewUserFlows },
+  { flowPlaylistConfig },
+] = await setupIsolatedBackend(
+  "default-permissions",
+  () => import("../../backend/config/db-sqlite.ts"),
+  () => import("../../backend/db/helpers/index.ts"),
+  () => import("../../backend/services/auth.ts"),
+  () => import("../../backend/services/flows/newUserFlows.ts"),
+  () => import("../../backend/services/playlists/flowPlaylistConfig.ts"),
+);
 
 const setDefaults = (defaultPermissions: Record<string, boolean>) =>
   dbOps.updateSettings({
@@ -47,4 +55,38 @@ test("changing the defaults leaves existing users alone", () => {
   const stored = userOps.getUserById(existing.id);
   assert.equal(stored?.permissions.accessPlaylists, false);
   assert.equal(stored?.permissions.deleteTrack, false);
+});
+
+test("new accounts start with the admin's flows turned on", async () => {
+  setDefaults({ accessPlaylists: true });
+  const listener = createSystemProvisionedUser("listener", "user");
+  await startNewUserFlows(listener);
+  assert.deepEqual(
+    flowPlaylistConfig
+      .getFlowsOwnedByUser(listener!.id)
+      .map(({ discoverPresetId, enabled }) => [discoverPresetId, enabled]),
+    [
+      ["discover-weekly", true],
+      ["release-radar", true],
+    ],
+  );
+
+  dbOps.updateSettings({
+    security: {
+      localNetworkBypass: { enabled: false },
+      defaultPermissions: { accessPlaylists: true },
+      defaultFlows: ["trending-mix"],
+    },
+  });
+  const picked = createSystemProvisionedUser("picked", "user");
+  await startNewUserFlows(picked);
+  assert.deepEqual(
+    flowPlaylistConfig.getFlowsOwnedByUser(picked!.id).map((flow) => flow.discoverPresetId),
+    ["trending-mix"],
+  );
+
+  setDefaults({ accessPlaylists: false });
+  const noPlaylists = createSystemProvisionedUser("no-playlists", "user");
+  await startNewUserFlows(noPlaylists);
+  assert.deepEqual(flowPlaylistConfig.getFlowsOwnedByUser(noPlaylists!.id), []);
 });

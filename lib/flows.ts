@@ -108,3 +108,8 @@ export const normalizeYearRange = (yearFrom: unknown, yearTo: unknown) => {
   }
   return { yearFrom: from, yearTo: to };
 };
+
+export const LISTENING_HISTORY_PRESET_ID = "focus-listening-history";
+
+// New accounts have no listening history, so that template can't start for them.
+export const DEFAULT_NEW_USER_FLOWS = ["discover-weekly", "release-radar"];

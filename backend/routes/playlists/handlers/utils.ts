@@ -1,16 +1,8 @@
 import { downloadTracker } from "../../../services/downloadJobs/downloadTracker.ts";
-import { asAppError } from "../../../../lib/errors.ts";
 import { DEFAULT_FLOW_SIZE } from "../../../../lib/flows.ts";
 import { flowPlaylistConfig } from "../../../services/playlists/flowPlaylistConfig.ts";
 import { playlistOperationQueue } from "../../../services/playlists/playlistOperationQueue.ts";
-import {
-  createPlaylistOperationToken,
-  getLatestPlaylistOperationToken,
-  markLatestPlaylistOperationToken,
-  restorePlaylistOperationToken,
-} from "../../../services/playlists/playlistOperations.ts";
 import { splitFlowTotal } from "../../../../lib/flows.ts";
-import { logger } from "../../../services/logger.ts";
 import { isDownloadJobCancelled } from "../../../services/downloadJobs/downloadCancellation.ts";
 import { hasPermission } from "../../../services/auth.ts";
 import { requirePermission } from "../../../middleware/guards.ts";
@@ -89,27 +81,6 @@ export const flowPayloadError = (payload: unknown) => {
   return result.success ? null : result.issues[0].message;
 };
 
-export const markFlowMutationToken = (flowId: string) => {
-  const tokenScope = `flow:${flowId}:mutation`;
-  const previousToken = getLatestPlaylistOperationToken(tokenScope);
-  const token = createPlaylistOperationToken();
-  markLatestPlaylistOperationToken(tokenScope, token);
-  return { token, tokenScope, previousToken };
-};
-
-type FlowMutation = ReturnType<typeof markFlowMutationToken>;
-
-export const isFlowMutationTokenCurrent = (mutation: FlowMutation) =>
-  Boolean(mutation?.token) &&
-  getLatestPlaylistOperationToken(mutation.tokenScope) === mutation.token;
-
-export const restoreFlowMutationToken = (mutation: FlowMutation) =>
-  restorePlaylistOperationToken({
-    scope: mutation?.tokenScope,
-    token: mutation?.token,
-    previousToken: mutation?.previousToken,
-  });
-
 export const getAccessibleFlow = (user: RequestUser | undefined, flowId: string) =>
   flowPlaylistConfig.getFlowForUser(user, flowId);
 
@@ -170,25 +141,6 @@ export const filterJobsForUser = <T extends Pick<DownloadJob, "playlistId" | "pl
   (Array.isArray(jobs) ? jobs : []).filter((job) =>
     canAccessJobType(user, job?.playlistId || job?.playlistType),
   );
-
-export const queueFlowSideEffect = (kind: string, labelPrefix: string, flowId: string) => {
-  const mutation = markFlowMutationToken(flowId);
-  const { token, tokenScope } = mutation;
-  playlistOperationQueue
-    .enqueuePayload({
-      kind,
-      label: `${labelPrefix}:${flowId}`,
-      flowId,
-      tokenScope,
-      token,
-    })
-    .catch((error) => {
-      restoreFlowMutationToken(mutation);
-      logger.error("flows", `Failed to ${labelPrefix} flow ${flowId}:`, {
-        message: asAppError(error)?.message,
-      });
-    });
-};
 
 export function canAccessJobThroughPlaylist(
   user: RequestUser | undefined,

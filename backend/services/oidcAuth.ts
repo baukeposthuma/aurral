@@ -3,7 +3,13 @@ import * as client from "openid-client";
 import type { IDToken, UserInfoResponse } from "openid-client";
 import { db } from "../config/db-sqlite.ts";
 import { createSession } from "../config/session-helpers.ts";
-import { createSystemProvisionedUser, toResolvedUser, parseCsv, pruneExpired } from "./auth.ts";
+import {
+  createSystemProvisionedUser,
+  toResolvedUser,
+  parseCsv,
+  pruneExpired,
+  startNewUserFlowsLater,
+} from "./auth.ts";
 import { userOps, userIdentityOps } from "../db/helpers/index.ts";
 
 const STATE_TTL_MS = 10 * 60 * 1000;
@@ -313,7 +319,9 @@ function resolveOidcSessionUser(config: { issuer: string }, claims: OidcClaims) 
     });
     return userOps.getUserById(created.id);
   });
-  return toResolvedUser(provisionUser());
+  const provisioned = toResolvedUser(provisionUser());
+  startNewUserFlowsLater(provisioned);
+  return provisioned;
 }
 
 function buildCallbackUrl(query: Record<string, string>) {

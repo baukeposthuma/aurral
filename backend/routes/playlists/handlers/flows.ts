@@ -9,11 +9,7 @@ import { withPlaylistMutationLock } from "../../../services/downloadJobs/downloa
 import {
   DEFAULT_LIMIT,
   flowPayloadError,
-  markFlowMutationToken,
-  isFlowMutationTokenCurrent,
-  restoreFlowMutationToken,
   getAccessibleFlow,
-  queueFlowSideEffect,
   enqueueResearchTrack,
   requirePlaylistAccess,
 } from "./utils.ts";
@@ -22,6 +18,12 @@ import {
   restoreMarkedPlaylistDownloadWork,
 } from "../../../services/downloadJobs/downloadCancellationService.ts";
 import { buildFlowFromTemplate, listFlowTemplates } from "../../../services/flows/flowTemplates.ts";
+import {
+  isFlowMutationTokenCurrent,
+  markFlowMutationToken,
+  queueFlowSideEffect,
+  restoreFlowMutationToken,
+} from "../../../services/flows/flowMutations.ts";
 import { getDiscoverPlaylistPreset } from "../../../config/discoverPlaylistPresets.ts";
 import { browseCoverFile } from "../../../services/discovery/browseCovers.ts";
 import { sendImageFile } from "../../shared/sendImageFile.ts";

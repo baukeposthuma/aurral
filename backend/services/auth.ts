@@ -474,7 +474,13 @@ export function ensureExternalUser(username: string, role: string) {
     }
     return toResolvedUser(existing);
   }
-  return createSystemProvisionedUser(username, role);
+  const created = createSystemProvisionedUser(username, role);
+  startNewUserFlowsLater(created);
+  return created;
+}
+
+export function startNewUserFlowsLater(user: ReturnType<typeof toResolvedUser>) {
+  void import("./flows/newUserFlows.ts").then(({ startNewUserFlows }) => startNewUserFlows(user));
 }
 
 function isProxyAdmin(req: ProxyRequest, username: string) {

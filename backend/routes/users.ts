@@ -19,6 +19,8 @@ import {
   reconcileLocalNetworkBypassSetting,
   requirePasswordStrength,
   rotateUserApiKey,
+  startNewUserFlowsLater,
+  toResolvedUser,
 } from "../services/auth.ts";
 import { deleteSessionsByUserId } from "../config/session-helpers.ts";
 import { websocketService } from "../services/websocketService.ts";
@@ -119,6 +121,7 @@ export default new Hono<AppEnv>()
         return c.json({ error: "Failed to create user" }, 500);
       }
       reconcileLocalBypassAfterUserMutation();
+      startNewUserFlowsLater(toResolvedUser(created));
       return c.json(
         {
           id: created.id,

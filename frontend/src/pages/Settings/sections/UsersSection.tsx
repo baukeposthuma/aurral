@@ -1,4 +1,10 @@
+import { useId } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { parseResponse } from "hono/client";
 import PillToggle from "../../../components/PillToggle";
+import { queryKeys } from "../../../queryClient.ts";
+import { flowsClient } from "../../../utils/api/clients/flows.ts";
+import { DEFAULT_NEW_USER_FLOWS, LISTENING_HISTORY_PRESET_ID } from "../../../../../lib/flows.ts";
 import { DotLoader } from "../../../components/DotLoader";
 import { useAuth } from "../../../contexts/AuthContext";
 import { SettingsInput } from "../components/SettingsField";
@@ -171,7 +177,53 @@ function DefaultPermissionsPage() {
         permissions={{ ...GRANULAR_PERMISSIONS, ...settings.security.defaultPermissions }}
         onChange={(defaultPermissions) => void saveSecurity({ defaultPermissions })}
       />
+      <NewUserFlowsGroup />
     </SettingsPage>
+  );
+}
+
+function NewUserFlowsGroup() {
+  const { user } = useAuth();
+  const { settings } = useServerSettings();
+  const saveSecurity = useSaveSecurity();
+  const templates = useQuery({
+    queryKey: queryKeys.flowTemplates(user?.id),
+    queryFn: ({ signal }) =>
+      parseResponse(flowsClient["flow-templates"].$get(undefined, { init: { signal } })),
+    staleTime: 5 * 60 * 1000,
+  });
+  const selected = settings.security.defaultFlows ?? DEFAULT_NEW_USER_FLOWS;
+  const id = useId();
+
+  return (
+    <SettingsGroup
+      title="Flows"
+      note="New accounts start with these flows turned on. Each one downloads about 20 songs a week per user."
+    >
+      {(templates.data?.templates ?? [])
+        .filter((template) => template.id !== LISTENING_HISTORY_PRESET_ID)
+        .map((template) => (
+          <SettingsRow
+            key={template.id}
+            label={template.name}
+            help={template.description}
+            htmlFor={`${id}-${template.id}`}
+          >
+            <PillToggle
+              id={`${id}-${template.id}`}
+              checked={selected.includes(template.id)}
+              aria-label={template.name}
+              onChange={(event) =>
+                void saveSecurity({
+                  defaultFlows: event.target.checked
+                    ? [...selected, template.id]
+                    : selected.filter((templateId) => templateId !== template.id),
+                })
+              }
+            />
+          </SettingsRow>
+        ))}
+    </SettingsGroup>
   );
 }
 
