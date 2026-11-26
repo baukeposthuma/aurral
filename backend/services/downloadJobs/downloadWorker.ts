@@ -6,6 +6,7 @@ import { flowPlaylistConfig } from "../playlists/flowPlaylistConfig.ts";
 import type { FlowRunSpec } from "../flows/flowTrackSource.ts";
 import { buildFlowRunPlanIsolated } from "../flows/flowPlanRunner.ts";
 import { dbOps } from "../../db/helpers/index.ts";
+import { clampDownloadConcurrency } from "../../../lib/downloadConcurrency.ts";
 import { resolveTrackSearchContext } from "./trackSearchContext.ts";
 import {
   MAX_RELEASE_WAITS,
@@ -47,10 +48,7 @@ import { finalizeQualityUpgradeFailure } from "../qualityUpgradeOutcome.ts";
 import { trackWork } from "../eventLoopWatch.ts";
 import { isUnknownTitle } from "../trackMatching/titleText.ts";
 
-const DEFAULT_CONCURRENCY = 3;
 const SEARCH_SLOT_RECHECK_MS = 2000;
-const MIN_CONCURRENCY = 1;
-const MAX_CONCURRENCY = 3;
 const JOB_COOLDOWN_MS = 750;
 const REUSE_REPAIR_INTERVAL_MS = 30 * 60 * 1000;
 const WORKER_STOPPED_CODE = "WORKER_STOPPED";
@@ -277,9 +275,7 @@ export class DownloadWorker {
   }
 
   _normalizeConcurrency(value: unknown) {
-    const parsed = Number(value);
-    if (!Number.isFinite(parsed)) return DEFAULT_CONCURRENCY;
-    return Math.min(MAX_CONCURRENCY, Math.max(MIN_CONCURRENCY, Math.floor(parsed)));
+    return clampDownloadConcurrency(value);
   }
 
   _getNextReadyPendingJob(lastPlaylistType: string | null = null) {

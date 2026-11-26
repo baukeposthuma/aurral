@@ -13,6 +13,7 @@ import {
 } from "../helpers/backendTestHarness.ts";
 import { listen } from "../helpers/honoApp.ts";
 import { isRecord } from "../../lib/isRecord.ts";
+import { DOWNLOAD_CONCURRENCY } from "../../lib/downloadConcurrency.ts";
 
 const [
   state,
@@ -778,4 +779,14 @@ test("flows, activity, and review preserve their public response fields and stor
   });
   await pause(false);
   assert.equal(await queuePaused(), false);
+  const setConcurrency = (concurrency: number, status?: number) =>
+    call("/api/playlists/worker/settings", { method: "PUT", body: { concurrency }, status });
+  assert.equal(
+    v.parse(
+      v.object({ settings: v.object({ concurrency: v.number() }) }),
+      await setConcurrency(DOWNLOAD_CONCURRENCY.max),
+    ).settings.concurrency,
+    DOWNLOAD_CONCURRENCY.max,
+  );
+  fields(await setConcurrency(DOWNLOAD_CONCURRENCY.max + 1, 400), { error: "string" });
 });

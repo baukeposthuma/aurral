@@ -11,6 +11,7 @@ import { logger } from "../../../services/logger.ts";
 import { requireAdmin } from "../../../middleware/guards.ts";
 import { validate } from "../../../middleware/validate.ts";
 import { asAppError } from "../../../../lib/errors.ts";
+import { DOWNLOAD_CONCURRENCY } from "../../../../lib/downloadConcurrency.ts";
 import { requirePlaylistAccess } from "./utils.ts";
 import type { AppEnv } from "../../../middleware/requestUser.ts";
 
@@ -33,8 +34,17 @@ export default new Hono<AppEnv>()
       const { concurrency, paused } = c.req.valid("json");
       if (concurrency !== undefined) {
         const parsed = Number(concurrency);
-        if (!Number.isInteger(parsed) || parsed < 1 || parsed > 3) {
-          return c.json({ error: "concurrency must be an integer between 1 and 3" }, 400);
+        if (
+          !Number.isInteger(parsed) ||
+          parsed < DOWNLOAD_CONCURRENCY.min ||
+          parsed > DOWNLOAD_CONCURRENCY.max
+        ) {
+          return c.json(
+            {
+              error: `concurrency must be an integer between ${DOWNLOAD_CONCURRENCY.min} and ${DOWNLOAD_CONCURRENCY.max}`,
+            },
+            400,
+          );
         }
       }
       const settings = await downloadWorker.updateWorkerSettings({

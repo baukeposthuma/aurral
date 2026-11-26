@@ -22,6 +22,9 @@ import { QualityGroup, QualityProfileDetail } from "./downloads/QualityProfileDe
 import { PathMappingDetail, PathMappingsTable, resolveMappingItem } from "./downloads/PathMappings";
 import { pluginStatus, usePlugins } from "./PluginsSection";
 import { DownloadSourceList, type DownloadSourceRow } from "./downloads/DownloadSources";
+import { ParallelDownloadsGroup } from "./downloads/ParallelDownloads";
+
+const SOULSEEK_ONLY_SOURCES = new Set(["slskd", "ytdlp"]);
 
 const SOURCE_IDS: Partial<Record<string, string>> = { nzbget: "usenet", sabnzbd: "usenet" };
 const sourceId = (row: DownloadSourceRow) =>
@@ -69,6 +72,9 @@ export function DownloadsSection() {
     (left, right) =>
       left.priority - right.priority || sourceId(left).localeCompare(sourceId(right)),
   );
+  const soulseekOnly =
+    sources.some((source) => source.id === "slskd") &&
+    sources.every((source) => SOULSEEK_ONLY_SOURCES.has(source.id));
   const activeClient = clients.find((definition) => definition.key === item);
   const mapping = resolveMappingItem(settings, item);
 
@@ -116,6 +122,7 @@ export function DownloadsSection() {
           status={prowlarrServiceStatus(data)}
         />
       </SettingsGroup>
+      <ParallelDownloadsGroup soulseekOnly={soulseekOnly} />
       <QualityGroup />
       <SettingsGroup
         title="Remote path mappings"

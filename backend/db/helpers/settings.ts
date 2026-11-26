@@ -22,6 +22,7 @@ import {
   type StoredIntegrations,
 } from "./integrationSettings.ts";
 import { lenient } from "./storedSchemas.ts";
+import { clampDownloadConcurrency } from "../../../lib/downloadConcurrency.ts";
 
 export type { StoredIntegrations } from "./integrationSettings.ts";
 
@@ -124,11 +125,7 @@ const readStoredSettingJson = <Schema extends v.GenericSchema>(schema: Schema, k
 
 function normalizePlaylistWorkerSettings(raw: StoredPlaylistWorker | null | undefined) {
   const worker: StoredPlaylistWorker = raw && typeof raw === "object" ? raw : {};
-  const parsedConcurrency = Number(worker.concurrency);
-  const concurrency =
-    Number.isFinite(parsedConcurrency) && parsedConcurrency >= 1
-      ? Math.min(3, Math.floor(parsedConcurrency))
-      : 2;
+  const concurrency = clampDownloadConcurrency(worker.concurrency);
   const retryPausedPlaylistIds = Array.isArray(worker.retryPausedPlaylistIds)
     ? [
         ...new Set(
