@@ -93,9 +93,14 @@ export default function PlaylistsPage() {
     );
 
   useEffect(() => {
-    const { openImport, shareUrl } = routeStateOf(location.state);
-    if (!openImport) return;
-    setImportRequest(typeof shareUrl === "string" ? { initialShareUrl: shareUrl } : {});
+    const { openCreate, openImport, shareUrl } = routeStateOf(location.state);
+    if (!openCreate && !openImport) return;
+    if (openCreate) {
+      setCreateError("");
+      setCreateOpen(true);
+    } else {
+      setImportRequest(typeof shareUrl === "string" ? { initialShareUrl: shareUrl } : {});
+    }
     navigate(location.pathname, { replace: true, state: {} });
   }, [location.pathname, location.state, navigate]);
 

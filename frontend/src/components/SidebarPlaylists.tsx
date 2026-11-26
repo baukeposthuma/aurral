@@ -1,5 +1,5 @@
 import { useState, type SyntheticEvent } from "react";
-import { useLocation } from "react-router";
+import { useLocation, useNavigate } from "react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { parseResponse } from "hono/client";
 import { useSortable } from "@dnd-kit/sortable";
@@ -7,7 +7,7 @@ import { CSS } from "@dnd-kit/utilities";
 import RouteLink from "./RouteLink";
 import { SortableList } from "./SortableList";
 import { LibraryItemMenu } from "./LibraryItemMenu";
-import { RotateCcw } from "./icons";
+import { ListMusic, RotateCcw, Upload } from "./icons";
 import { usePlaylistArtwork } from "../hooks/usePlaylistArtwork.ts";
 import { flowPath, playlistPath } from "../navigation/playlistPaths.ts";
 import { PlaylistArtworkThumb } from "./PlaylistArtworkThumb.tsx";
@@ -103,6 +103,7 @@ function SidebarPlaylistRow({
 
 function SidebarPlaylists({ status, iconsOnly, onTooltip }: SidebarPlaylistsProps) {
   const { order, isLoading, saveOrder } = usePlaylistOrder();
+  const navigate = useNavigate();
   if (!status || isLoading) return null;
   const entries = applyCustomOrder(
     [
@@ -126,21 +127,35 @@ function SidebarPlaylists({ status, iconsOnly, onTooltip }: SidebarPlaylistsProp
           <RouteLink to="/library/playlists" className="sidebar-playlists__head">
             Playlists
           </RouteLink>
-          {order.length > 0 ? (
-            <LibraryItemMenu
-              label="Playlists"
-              triggerLabel="Playlist order"
-              triggerClassName="native-library-item-menu__trigger sidebar-playlists__menu"
-              items={[
-                {
-                  id: "reset",
-                  label: "Reset order",
-                  icon: RotateCcw,
-                  onSelect: () => saveOrder([]),
-                },
-              ]}
-            />
-          ) : null}
+          <LibraryItemMenu
+            label="Playlists"
+            triggerLabel="Playlist options"
+            triggerClassName="native-library-item-menu__trigger sidebar-playlists__menu"
+            items={[
+              {
+                id: "new",
+                label: "New playlist",
+                icon: ListMusic,
+                onSelect: () => navigate("/library/playlists", { state: { openCreate: true } }),
+              },
+              {
+                id: "import",
+                label: "Import playlist",
+                icon: Upload,
+                onSelect: () => navigate("/library/playlists", { state: { openImport: true } }),
+              },
+              ...(order.length > 0
+                ? [
+                    {
+                      id: "reset",
+                      label: "Reset order",
+                      icon: RotateCcw,
+                      onSelect: () => saveOrder([]),
+                    },
+                  ]
+                : []),
+            ]}
+          />
         </div>
       )}
       <SortableList
