@@ -3,6 +3,8 @@ import { expandAlbumGrabHistory, queuedAlbumGrabs } from "./albumGrabActivity.ts
 import { dbOps } from "../db/helpers/index.ts";
 import { resolveBlockedJobReleaseTitle, resolveBlockedJobSourceFilename } from "./downloadUtils.ts";
 import { flowPlaylistConfig } from "./playlists/flowPlaylistConfig.ts";
+import { hasPermission } from "./auth.ts";
+import type { RequestUser } from "../middleware/requestUser.ts";
 import { getLibraryAlbumIdsByReference } from "./libraryQueryService.ts";
 import type { AurralHistoryEntry, TrackUpgrade } from "../db/helpers/history.ts";
 import type { AnyQueue, JsonObject } from "./jobs/queue.ts";
@@ -103,17 +105,26 @@ export const recordRequestGroupDownloaded = async (requestGroupId: string, fileP
 const isQueueActive = (queue: AnyQueue, predicate: (payload: JsonObject) => boolean) =>
   queue.list().some(({ payload }) => payload !== null && predicate(payload));
 
-const canViewPlaylistActivity = (
-  user: RequesterUser | null | undefined,
-  playlistId: unknown,
-  ownerUserId: unknown = undefined,
+type ActivityViewer = RequesterUser & Pick<RequestUser, "permissions">;
+
+const canViewActivity = (
+  user: ActivityViewer | null | undefined,
+  entry: AurralHistoryEntry,
+  { owned = false } = {},
 ) => {
   if (!user || user.role === "admin") return true;
-  if (ownerUserId !== undefined) {
+  const ownerUserId = entry.metadata?.ownerUserId;
+  if (owned && ownerUserId !== undefined) {
     return ownerUserId != null && Number(ownerUserId) === Number(user.id);
   }
-  const id = String(playlistId || "").trim();
-  if (!id || id === "library") return true;
+  const id = String(entry.metadata?.playlistId || entry.metadata?.playlistType || "").trim();
+  if (!id || id === "library") {
+    const requesterId = requesterFromMetadata(entry.metadata)?.userId;
+    return (
+      hasPermission(user, "manageDownloads") ||
+      (requesterId != null && Number(requesterId) === Number(user.id))
+    );
+  }
   const flow = flowPlaylistConfig.getFlow(id);
   if (flow) return flowPlaylistConfig.canUserAccessFlow(user, flow);
   const playlist = flowPlaylistConfig.getStaticPlaylist(id);
@@ -507,7 +518,7 @@ const buildActiveTrackHistory = (job: HistoryJob | null | undefined): AurralHist
   };
 };
 
-export const getAurralHistoryRequests = async (user: RequesterUser | null = null) => {
+export const getAurralHistoryRequests = async (user: ActivityViewer | null = null) => {
   await syncActivityFeedHistory();
   const entries: AurralHistoryEntry[] = [
     ...loadPendingPlaylistImportHistory(user),
@@ -525,23 +536,14 @@ export const getAurralHistoryRequests = async (user: RequesterUser | null = null
   const storedEntries = dbOps.getAurralHistoryByIds(activeJobs.map(({ historyId }) => historyId));
   for (const { job, historyId } of activeJobs) {
     const entry = storedEntries.get(historyId) || buildActiveTrackHistory(job);
-    if (
-      !canViewPlaylistActivity(user, entry.metadata?.playlistId || entry.metadata?.playlistType)
-    ) {
-      continue;
-    }
+    if (!canViewActivity(user, entry)) continue;
     entries.push(entry);
     entryIds.add(historyId);
   }
 
   const now = Date.now();
   const jobsById = new Map(jobs.map((job) => [job.id, job]));
-  const canViewEntry = (entry: AurralHistoryEntry) =>
-    canViewPlaylistActivity(
-      user,
-      entry.metadata?.playlistId || entry.metadata?.playlistType,
-      entry.metadata?.ownerUserId,
-    );
+  const canViewEntry = (entry: AurralHistoryEntry) => canViewActivity(user, entry, { owned: true });
   const expanded = expandAlbumGrabHistory(entries, now - MAX_AGE_MS, canViewEntry);
   const visible = expanded.entries.flatMap((entry) => {
     if (

@@ -106,7 +106,7 @@ export default new Hono<AppEnv>()
       offset,
       limit: limit ?? ACTIVITY_PAGE_SIZE,
     });
-    const canCancelAny = hasPermission(user, "accessPlaylists");
+    const canCancelAny = hasPermission(user, "manageDownloads");
     const cancelable = requests.filter(
       (request) =>
         isCancelableDownload(request) &&

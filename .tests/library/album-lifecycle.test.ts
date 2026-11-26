@@ -248,7 +248,7 @@ test("cancelling one Library download preserves monitoring and rejects finished 
   assert.equal(getJob(pending).status, "cancelled");
 });
 
-test("a Library requester can cancel without flow permission and cannot cancel another requester's song", async () => {
+test("only manageDownloads lets a user cancel another requester's Library song", async () => {
   const fixture = createLibraryAlbum();
   const own = fixture.jobFor(0);
   const other = fixture.jobFor(1);
@@ -258,9 +258,14 @@ test("a Library requester can cancel without flow permission and cannot cancel a
   requestUser = testUser(3, "user");
   assert.equal((await apiRequest(`/api/playlists/jobs/${other}/cancel`, "POST")).status, 403);
   assert.equal((await apiRequest("/api/playlists/jobs/unknown-job/cancel", "POST")).status, 404);
+  requestUser = testUser(3, "user", { accessPlaylists: true });
+  assert.equal((await apiRequest(`/api/playlists/jobs/${other}/cancel`, "POST")).status, 403);
   assert.equal((await apiRequest(`/api/playlists/jobs/${own}/cancel`, "POST")).status, 200);
   assert.equal(getJob(own).status, "cancelled");
   assert.equal(getJob(other).status, "pending");
+  requestUser = testUser(5, "user", { manageDownloads: true });
+  assert.equal((await apiRequest(`/api/playlists/jobs/${other}/cancel`, "POST")).status, 200);
+  assert.equal(getJob(other).status, "cancelled");
 });
 
 test("cancelling all downloads stops only the active jobs the user controls, or those of one cause", async () => {

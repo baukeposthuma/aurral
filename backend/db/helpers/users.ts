@@ -71,6 +71,7 @@ const deleteUserStmt = db.prepare("DELETE FROM users WHERE id = ?");
 
 const DEFAULT_PERMISSIONS = {
   accessPlaylists: false,
+  manageDownloads: false,
   addArtist: true,
   addAlbum: true,
   changeMonitoring: false,

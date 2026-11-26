@@ -88,6 +88,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             permissions: {
               accessSettings: true,
               accessPlaylists: true,
+              manageDownloads: true,
               addArtist: true,
               addAlbum: true,
               changeMonitoring: true,

@@ -797,3 +797,26 @@ test.each([null, "deemix"])(
     assert.equal((await entry()).source, downloadSource || "unknown");
   },
 );
+
+test("Library downloads show only to their requester unless the user manages downloads", async () => {
+  const request = (jobId: string, userId: number) =>
+    upsertAurralHistory({
+      referenceId: jobId,
+      kind: "track_download",
+      title: `Queued ${jobId}`,
+      status: "pending",
+      statusLabel: "Queued",
+      metadata: { jobId, trackName: jobId, playlistId: "library", userId, username: `u${userId}` },
+    });
+  request("mine", 2);
+  request("theirs", 1);
+  const listener = { id: 2, username: "u2", role: "user", permissions: {} };
+  const visibleTo = async (user: typeof listener) =>
+    (await getAurralHistoryRequests(user)).map((entry) => entry.jobId).sort();
+
+  assert.deepEqual(await visibleTo(listener), ["mine"]);
+  assert.deepEqual(await visibleTo({ ...listener, permissions: { manageDownloads: true } }), [
+    "mine",
+    "theirs",
+  ]);
+});

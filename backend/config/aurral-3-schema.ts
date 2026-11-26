@@ -3,6 +3,7 @@ import * as v from "valibot";
 import { asAppError } from "../../lib/errors.ts";
 import type { SettingsRow } from "../db/rows.ts";
 import { JOB_TABLES_SQL } from "./job-queue-migration.ts";
+import { splitManageDownloadsPermission } from "./manage-downloads-permission-migration.ts";
 import { renamePlaylistPermission } from "./playlist-permission-migration.ts";
 import { migrateStaticPlaylistsToLibrary } from "./static-playlist-library-migration.ts";
 
@@ -902,4 +903,5 @@ export function createAurral3Schema(db: Database.Database) {
 
   migrateStaticPlaylistsToLibrary(db);
   renamePlaylistPermission(db);
+  splitManageDownloadsPermission(db);
 }

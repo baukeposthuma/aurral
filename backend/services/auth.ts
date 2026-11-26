@@ -258,6 +258,7 @@ export function buildPermissions(role: string, permissions?: UserPermissions) {
     return {
       accessSettings: true,
       accessPlaylists: true,
+      manageDownloads: true,
       addArtist: true,
       addAlbum: true,
       changeMonitoring: true,

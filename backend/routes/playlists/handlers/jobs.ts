@@ -183,18 +183,25 @@ const reviewBlockedJob = async <E extends AppEnv>(
   }
 };
 
-const canControlJob = (user: RequestUser, job: DownloadJob) =>
-  hasPermission(user, "accessPlaylists")
-    ? canAccessJobType(user, job.playlistId || job.playlistType)
-    : job.playlistType === LIBRARY_JOB_TYPE &&
-      user.id != null &&
-      String(getTrackJobRequesterId(job.id)) === String(user.id);
+const canControlJob = (user: RequestUser, job: DownloadJob) => {
+  if (hasPermission(user, "manageDownloads")) {
+    return canAccessJobType(user, job.playlistId || job.playlistType);
+  }
+  if (job.playlistType === LIBRARY_JOB_TYPE) {
+    return user.id != null && String(getTrackJobRequesterId(job.id)) === String(user.id);
+  }
+  return (
+    hasPermission(user, "accessPlaylists") &&
+    canAccessPlaylistType(user, job.playlistId || job.playlistType)
+  );
+};
 
 const getControllableJob = <E extends AppEnv>(c: Context<E>, user: RequestUser, jobId: string) => {
   const job = downloadTracker.getJob(jobId);
   if (!job) return { failure: c.json({ error: "Track not found" }, 404) };
   if (!canControlJob(user, job)) {
-    return hasPermission(user, "accessPlaylists")
+    return job.playlistType !== LIBRARY_JOB_TYPE &&
+      (hasPermission(user, "accessPlaylists") || hasPermission(user, "manageDownloads"))
       ? { failure: c.json({ error: "Track not found" }, 404) }
       : { failure: c.json({ error: "Forbidden" }, 403) };
   }

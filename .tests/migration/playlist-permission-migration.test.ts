@@ -8,12 +8,14 @@ const [
   { userOps },
   { dbOps },
   { renamePlaylistPermission, PLAYLIST_PERMISSION_MIGRATION_KEY },
+  { splitManageDownloadsPermission, MANAGE_DOWNLOADS_PERMISSION_MIGRATION_KEY },
 ] = await setupIsolatedBackend(
   "playlist-permission-migration",
   () => import("../../backend/config/db-sqlite.ts"),
   () => import("../../backend/db/helpers/users.ts"),
   () => import("../../backend/db/helpers/index.ts"),
   () => import("../../backend/config/playlist-permission-migration.ts"),
+  () => import("../../backend/config/manage-downloads-permission-migration.ts"),
 );
 afterAll(() => cleanupIsolatedState(state));
 
@@ -51,6 +53,46 @@ test("accessFlow becomes accessPlaylists in stored users and default permissions
   );
   assert.deepEqual(dbOps.getSettings().security.defaultPermissions, {
     accessPlaylists: true,
+    addArtist: false,
+  });
+});
+
+test("users with accessPlaylists keep managing downloads after the split", () => {
+  const setPermissions = db.prepare<[string, number]>(
+    "UPDATE users SET permissions = ? WHERE id = ?",
+  );
+  const stored = [
+    { accessPlaylists: true, addAlbum: false },
+    { accessPlaylists: false },
+    { accessPlaylists: true, manageDownloads: false },
+    { addArtist: true },
+  ].map((permissions, index) => {
+    const user = userOps.createUser(`split-${index}`, "hash", "user");
+    assert.ok(user != null);
+    setPermissions.run(JSON.stringify(permissions), user.id);
+    return user.id;
+  });
+  db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('security', ?)").run(
+    JSON.stringify({ defaultPermissions: { accessPlaylists: true, addArtist: false } }),
+  );
+
+  db.prepare("DELETE FROM settings WHERE key = ?").run(MANAGE_DOWNLOADS_PERMISSION_MIGRATION_KEY);
+  splitManageDownloadsPermission(db);
+  splitManageDownloadsPermission(db);
+  dbOps.invalidateSettingsCache();
+
+  assert.deepEqual(
+    stored.map((id) => userOps.getUserById(id)?.permissions),
+    [
+      { accessPlaylists: true, manageDownloads: true, addAlbum: false },
+      { accessPlaylists: false, manageDownloads: false },
+      { accessPlaylists: true, manageDownloads: false },
+      { addArtist: true },
+    ],
+  );
+  assert.deepEqual(dbOps.getSettings().security.defaultPermissions, {
+    accessPlaylists: true,
+    manageDownloads: true,
     addArtist: false,
   });
 });

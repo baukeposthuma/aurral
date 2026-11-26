@@ -1,5 +1,6 @@
 export const GRANULAR_PERMISSIONS = {
   accessPlaylists: false,
+  manageDownloads: false,
   addArtist: true,
   addAlbum: true,
   changeMonitoring: false,
@@ -9,7 +10,8 @@ export const GRANULAR_PERMISSIONS = {
 };
 
 export const granularPerms = [
-  { key: "accessPlaylists", label: "Access playlists and downloads" },
+  { key: "accessPlaylists", label: "Access playlists and flows" },
+  { key: "manageDownloads", label: "Manage everyone's downloads" },
   { key: "addArtist", label: "Add artist" },
   { key: "addAlbum", label: "Add album" },
   { key: "changeMonitoring", label: "Change artist monitoring" },

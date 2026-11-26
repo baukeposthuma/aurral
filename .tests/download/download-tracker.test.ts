@@ -531,12 +531,17 @@ test("album activity excludes hidden member identities from an authorized respon
   const { getAurralHistoryRequests } =
     await import("../../backend/services/aurralHistoryRequests.ts");
   const visible = (
-    await getAurralHistoryRequests({ id: 42, username: "listener", role: "user" })
+    await getAurralHistoryRequests({
+      id: 42,
+      username: "listener",
+      role: "user",
+      permissions: { manageDownloads: true },
+    })
   ).filter((item) => ids.includes(item.jobId!));
   assert.equal(visible.length, 1);
   assert.deepEqual(requireFixture(visible[0]).albumGrab!.memberJobIds, [ids[0]]);
   const admin = (
-    await getAurralHistoryRequests({ id: 1, username: "admin", role: "admin" })
+    await getAurralHistoryRequests({ id: 1, username: "admin", role: "admin", permissions: {} })
   ).filter((item) => ids.includes(item.jobId!));
   assert.equal(admin.length, 2);
   assert.deepEqual(requireFixture(admin[0]).albumGrab!.memberJobIds, ids);

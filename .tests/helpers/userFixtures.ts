@@ -21,6 +21,7 @@ export function testWebSocketClient(
       permissions: {
         accessSettings: false,
         accessPlaylists: false,
+        manageDownloads: false,
         addArtist: false,
         addAlbum: false,
         changeMonitoring: false,
